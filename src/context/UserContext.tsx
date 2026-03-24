@@ -163,31 +163,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await api.get('/auth/me');
       setUser(response.data?.data);
-      setWallet(response.data?.wallet);
     } catch (err) {
       logout();
       throw err;
     }
   };
 
-  useEffect(() => {
-    if (user && !user?.category?._id) {
-      navigate('/course/category');
-    }
-    console.log('clicked')
-  }, [user, location.pathname]);
-
 
   const logout = async () => {
-    // localStorage.removeItem('accessToken');
-    // localStorage.removeItem('refreshToken');
-    // sessionStorage.removeItem('accessToken');
-    // sessionStorage.removeItem('refreshToken');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
     await api.get("auth/logout");
     setUser(null);
     setToken(null);
     delete api.defaults.headers.common['Authorization'];
-    window.location.href = "https://www.gatewayabroadeducations.com";
+    window.location.href = "/signin";
   };
 
   const value = {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeClosedIcon, EyeCloseIcon, EyeIcon, LucideEyeOff } from "lucide-react";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
@@ -20,36 +20,45 @@ export default function SignInForm() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      // API call using Axios instance
-      const response = await api.post("/auth/login", {
-        email,
-        password
-      });
+  try {
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
 
-      const { accessToken, refreshToken } = response.data;
+    const { token } = response.data;
 
-      if (rememberMe) {
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
-      } else {
-        sessionStorage.setItem("accessToken", accessToken);
-        sessionStorage.setItem("refreshToken", refreshToken);
-      }
-      api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-      fetchUserProfile()
-      navigate("/");
-    } catch (err) {
-      let errorMessage = err?.message || "Login failed. Please try again.";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+    if (!token) {
+      throw new Error("Token not received from server");
+
     }
-  };
+
+    console.log(token)
+
+    const storage = rememberMe ? localStorage : sessionStorage;
+
+    storage.setItem("accessToken", token);
+
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    await fetchUserProfile();
+
+    navigate("/");
+  } catch (err) {
+    const errorMessage =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Login failed. Please try again.";
+
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col flex-1">
@@ -102,17 +111,7 @@ export default function SignInForm() {
                     minLength={8}
                     autoComplete="current-password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  >
-                    {showPassword ? (
-                      <EyeCloseIcon className="w-5 h-5" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5" />
-                    )}
-                  </button>
+               
                 </div>
               </div>
               
@@ -147,6 +146,18 @@ export default function SignInForm() {
               </div>
             </div>
           </form>
+             <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-145 top-105 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? (
+                      <LucideEyeOff className="w-5 h-5" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5" />
+                      
+                    )}
+                  </button>
 {/*           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">

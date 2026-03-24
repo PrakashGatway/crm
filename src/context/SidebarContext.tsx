@@ -68,12 +68,10 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         isExpanded: isMobile ? false : isExpanded,
         isMobileOpen,
-        isHovered,
         activeItem,
         openSubmenu,
         toggleSidebar,
         toggleMobileSidebar,
-        setIsHovered,
         setActiveItem,
         toggleSubmenu,
       }}
