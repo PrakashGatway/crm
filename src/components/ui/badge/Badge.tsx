@@ -26,6 +26,12 @@ const Badge: React.FC<BadgeProps> = ({
   endIcon,
   children,
 }) => {
+
+  return (
+    <span>
+      jaiho
+    </span>
+  );
   const baseStyles =
     "inline-flex items-center px-2.5 py-0.5 justify-center gap-1 rounded-full font-medium";
 

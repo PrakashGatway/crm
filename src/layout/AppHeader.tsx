@@ -19,7 +19,9 @@ import {
     ShoppingCart,
     SpeakerIcon,
     Volume2,
-    VolumeOff
+    VolumeOff,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 import { set } from "date-fns";
 
@@ -88,7 +90,12 @@ const AppHeader: React.FC = () => {
                 {/* Mobile Header Section */}
                 <div className="flex items-center justify-between w-full gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-3">
                     {/* Sidebar Toggle */}
-               
+                    <motion.button
+                        className="lg:hidden"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleToggle}
+                    ><ChevronRight className="w-6 h-6 text-gray-600 dark:text-gray-400" /></motion.button>
 
                     {/* Mobile Logo */}
                     <Link to="/" className="lg:hidden">
@@ -119,26 +126,22 @@ const AppHeader: React.FC = () => {
                     </motion.button>
                 </div>
 
-                {/* Desktop Navigation Section */}
                 <div className={`${isApplicationMenuOpen ? "flex" : "hidden"} items-center justify-between w-full gap-4 px-4 py-3 lg:flex lg:justify-end lg:px-0 lg:py-2`}>
                     <div className="flex items-center gap-2 2xsm:gap-2">
                         {/* Theme Toggle */}
                         <ThemeToggleButton />
                         <button
                             className="relative flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full dropdown-toggle hover:text-gray-700 h-10 w-10 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                            onClick={() => {toggleSound();setIsMuted(!isMuted)}}
+                            onClick={() => { toggleSound(); setIsMuted(!isMuted) }}
                         >
                             {!isMuted ? <VolumeOff className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
                         </button>
                         {/* Notification Dropdown */}
                         <NotificationDropdown />
-
-                
-
                     </div>
 
                     {/* User Dropdown */}
-                    {user.role != 'counselor' && user.role != 'manager' && user.role != 'leader' && <UserDropdown user={user} logout={logout} />}
+                    {<UserDropdown user={user} logout={logout} />}
 
                 </div>
             </div>

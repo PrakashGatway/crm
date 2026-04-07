@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/UserContext";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Users, 
-  Rocket, 
-  User, 
-  ChevronDown, 
+import {
+  LayoutDashboard,
+  FileText,
+  Users,
+  Rocket,
+  User,
+  ChevronDown,
   Shield,
   Settings
 } from "lucide-react";
@@ -17,13 +17,13 @@ const getIcon = (name: string, size = 22) => {
   const props = { size, strokeWidth: 1.8 };
   switch (name) {
     case "Dashboard": return <LayoutDashboard {...props} />;
-    case "Daily Reports": 
+    case "Daily Reports":
     case "Call Reports": return <FileText {...props} />;
     case "Users": return <Users {...props} />;
     case "Leads": return <Rocket {...props} />;
-    case "Teams": return <Users {...props} /> ;
-    case "Roles": return <Shield {...props} />;
-    case "My Profile": 
+    case "Teams": return <Users {...props} />;
+    case "Assign Rules": return <Shield {...props} />;
+    case "My Profile":
     case "Profile": return <User {...props} />;
     case "Setting": return <Settings {...props} />;
     default: return <LayoutDashboard {...props} />;
@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
   { name: "Users", path: "/users" },
   { name: "Leads", path: "/leads" },
   { name: "Teams", path: "/teams" },
-  { name: "Roles", path: "/roles" },
+  { name: "Assign Rules", path: "/rules" },
   { name: "Setting", path: "/setting" },
 
 ];
@@ -68,7 +68,7 @@ const AppSidebar: React.FC = () => {
     type: "main" | "others";
     index: number;
   } | null>(null);
-  
+
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -125,9 +125,8 @@ const AppSidebar: React.FC = () => {
       if (user?.role === "teacher" || user?.role === "counselor" || user?.role === "manager" || user?.role === "leader") return teacherOthersItems;
       return othersItems;
     }
-  };
+  }
 
-  const primaryColor = "#daff02";
 
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
     <ul className="flex flex-col gap-1">
@@ -143,12 +142,12 @@ const AppSidebar: React.FC = () => {
               <button
                 onClick={() => handleSubmenuToggle(index, menuType)}
                 className={`w-full flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-300
-                  ${isActiveState 
-                    ? "bg-yellow-50 dark:bg-yellow-900/10 text-black dark:text-yellow-300" 
+                  ${isActiveState
+                    ? "bg-yellow-50 dark:bg-yellow-900/10 text-black dark:text-yellow-300"
                     : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                   }`}
               >
-                <div className={`${isActiveState ? "text-red-500" : ""}`}>
+                <div className={`${isActiveState ? "text-red-700" : ""}`}>
                   {getIcon(nav.name)}
                 </div>
                 <span className={`text-[10px] font-medium text-center leading-tight ${isActiveState ? "font-bold text-gray-900 dark:text-white" : ""}`}>
@@ -162,8 +161,8 @@ const AppSidebar: React.FC = () => {
               <Link
                 to={nav.path}
                 className={`w-full flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-300
-                  ${isActiveState 
-                    ? "bg-yellow-50 dark:bg-yellow-900/10 text-black dark:text-yellow-300" 
+                  ${isActiveState
+                    ? "bg-yellow-50 dark:bg-yellow-900/10 text-black dark:text-yellow-300"
                     : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                   }`}
               >
@@ -214,7 +213,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-14 lg:mt-0 top-0 left-0 bg-white dark:bg-gray-900 h-screen transition-all duration-300 z-50 border-r border-gray-200 dark:border-gray-800
+      className={`fixed lg:mt-0 top-0 left-0 bg-white dark:bg-gray-900 h-screen transition-all duration-300 z-50 border-r border-gray-200 dark:border-gray-800
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 `}
     >
@@ -222,34 +221,34 @@ const AppSidebar: React.FC = () => {
       <div className="py-4 flex justify-center items-center border-b border-gray-100 dark:border-gray-800">
         <Link to="/" className="flex flex-col items-center">
           <img
-            src="https://www.gatewayabroadeducations.com/images/logo.svg"
+            src="https://www.gatewayabroadeducations.com/favicon.ico"
             alt="Logo"
-            width={80}
-            height={60}
-            className="object-contain"
+            width={50}
+            height={30}
+            className="object-contain scale-150"
           />
         </Link>
       </div>
 
       {/* Navigation */}
-      <div className="flex flex-col flex-1 overflow-y-auto py-4 px-2">
+      <div className="flex flex-col flex-1 overflow-y-auto max-h-[calc(100vh-8rem)] no-scrollbar py-4 px-2">
         <nav className="flex-1">
           {/* Menu Section */}
           <div className="mb-2">
-            
+
             {renderMenuItems(getMenuItems("main"), "main")}
           </div>
 
           {/* Others Section */}
           <div>
-         
+
             {renderMenuItems(getMenuItems("others"), "others")}
           </div>
         </nav>
 
         {/* User Profile */}
-        {user && (
-          <div className="mt-auto pt-60">
+        {/* {user && (
+          <div className="mt-auto absolute bottom-2 left-1/2 transform -translate-x-1/2">
             <div className="flex flex-col items-center p-2 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 border border-yellow-200/50 dark:border-yellow-800/30">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-black font-bold text-sm mb-1"
@@ -267,7 +266,7 @@ const AppSidebar: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </aside>
   );

@@ -460,9 +460,9 @@ const ActivityLogsModal = ({ leadId, leadName, isOpen, onClose }) => {
                                     <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{date}</p>
                                     <div className="space-y-2 ">
                                         {groupedActivities[date].map((activity, index) => {
-                                            const CallIcon = CALL_STATUS_ICON[activity.status]?.icon || PhoneCall;
-                                            const iconColor = CALL_STATUS_ICON[activity.status]?.color || "text-gray-600";
-                                            const isLast = index === groupedActivities[date].length - 1;
+                                            const CallIcon = CALL_STATUS_ICON[activity?.status]?.icon || PhoneCall;
+                                            const iconColor = CALL_STATUS_ICON[activity?.status]?.color || "text-gray-600";
+                                            const isLast = index === groupedActivities[date]?.length - 1;
 
                                             return (
                                                 <div
@@ -766,12 +766,12 @@ const ActivityLogsModal = ({ leadId, leadName, isOpen, onClose }) => {
 
                                     <div className="space-y-1">
                                         {activities.map((activity, index) => {
-                                            const CallIcon = CALL_STATUS_ICON[activity.status].icon || PhoneCall;
-                                            const iconColor = CALL_STATUS_ICON[activity.status].color || "text-gray-600";
+                                            const CallIcon = CALL_STATUS_ICON[activity?.status]?.icon || PhoneCall;
+                                            const iconColor = CALL_STATUS_ICON[activity?.status]?.color || "text-gray-600";
                                             const isLast = index === activities.length - 1;
-                                            let activityTitle = !isNaN(activity.status)
-                                                ? CALL_STATUS_MAP[Number(activity.status)] || "Unknown Status"
-                                                : activity.status || "Unknown Status";
+                                            let activityTitle = !isNaN(activity?.status)
+                                                ? CALL_STATUS_MAP[Number(activity?.status)] || "Unknown Status"
+                                                : activity?.status || "Unknown Status";
 
                                             return (
                                                 <motion.div

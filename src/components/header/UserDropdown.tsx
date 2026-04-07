@@ -139,7 +139,7 @@ export default function UserDropdown({ user, logout }: any) {
                                             <div className="text-xs text-gray-500 dark:text-gray-400">View and edit your profile</div>
                                         </div>
                                     </DropdownItem>
-
+{/* 
                                     <DropdownItem
                                         onItemClick={closeDropdown}
                                         tag="a"
@@ -153,9 +153,9 @@ export default function UserDropdown({ user, logout }: any) {
                                             <div className="font-medium">Settings</div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400">Account preferences</div>
                                         </div>
-                                    </DropdownItem>
+                                    </DropdownItem> */}
 
-                                    <DropdownItem
+                                    {/* <DropdownItem
                                         onItemClick={closeDropdown}
                                         tag="a"
                                         to="/billing"
@@ -168,8 +168,8 @@ export default function UserDropdown({ user, logout }: any) {
                                             <div className="font-medium">Billing</div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400">Payment methods & invoices</div>
                                         </div>
-                                    </DropdownItem>
-                                    <DropdownItem
+                                    </DropdownItem> */}
+                                    {/* <DropdownItem
                                         onItemClick={closeDropdown}
                                         tag="a"
                                         to="/support"
@@ -182,7 +182,7 @@ export default function UserDropdown({ user, logout }: any) {
                                             <div className="font-medium">Help & Support</div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400">Get help and contact support</div>
                                         </div>
-                                    </DropdownItem>
+                                    </DropdownItem> */}
                                 </nav>
                             </div>
 

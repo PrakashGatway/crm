@@ -46,7 +46,9 @@ export default function Tabs({
                 )}
 
                 {/* {Icon && <File className="h-4 w-4 mr-2" />} */}
-                {LeadStatus[tab.status] ? LeadStatus[tab.status] : tab.status} ({tab.count})
+                {LeadStatus[tab.status] ? LeadStatus[tab.status] : tab.status} <span className="ml-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-300 px-2 py-1 rounded-full text-xs">
+                  {tab.count}
+                </span>
               </motion.button>
             );
           })}

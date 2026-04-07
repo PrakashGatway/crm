@@ -15,50 +15,50 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const { fetchUserProfile } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const response = await api.post("/auth/login", {
-      email,
-      password,
-    });
+    try {
+      const response = await api.post("/auth/login", {
+        email,
+        password,
+      });
 
-    const { token } = response.data;
+      const { token } = response.data;
 
-    if (!token) {
-      throw new Error("Token not received from server");
+      if (!token) {
+        throw new Error("Token not received from server");
 
+      }
+
+      console.log(token)
+
+      const storage = rememberMe ? localStorage : sessionStorage;
+
+      storage.setItem("accessToken", token);
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      await fetchUserProfile();
+
+      navigate("/");
+    } catch (err) {
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Login failed. Please try again.";
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    console.log(token)
-
-    const storage = rememberMe ? localStorage : sessionStorage;
-
-    storage.setItem("accessToken", token);
-
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-    await fetchUserProfile();
-
-    navigate("/");
-  } catch (err) {
-    const errorMessage =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Login failed. Please try again.";
-
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="flex flex-col flex-1">
@@ -72,13 +72,13 @@ export default function SignInForm() {
               Enter your email and password to sign in!
             </p>
           </div>
-          
+
           {error && (
             <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-900 dark:text-red-100">
               {error}
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               <div>
@@ -95,7 +95,7 @@ export default function SignInForm() {
                   autoComplete="username"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="password">
                   Password <span className="text-error-500">*</span>
@@ -111,10 +111,22 @@ export default function SignInForm() {
                     minLength={8}
                     autoComplete="current-password"
                   />
-               
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 transform z-99 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? (
+                      <LucideEyeOff className="w-5 h-5" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5" />
+
+                    )}
+                  </button>
+
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Checkbox
@@ -133,7 +145,7 @@ export default function SignInForm() {
                   Forgot password?
                 </Link>
               </div>
-              
+
               <div>
                 <Button
                   type="submit"
@@ -146,19 +158,8 @@ export default function SignInForm() {
               </div>
             </div>
           </form>
-             <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-145 top-105 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  >
-                    {showPassword ? (
-                      <LucideEyeOff className="w-5 h-5" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5" />
-                      
-                    )}
-                  </button>
-{/*           
+
+          {/*           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}

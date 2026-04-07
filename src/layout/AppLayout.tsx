@@ -9,12 +9,12 @@ const LayoutContent: React.FC = () => {
 
   return (
     <div className="min-h-screen max-w-screen 3xl:flex">
-      <div>
+      <div className="relative z-100">
         <AppSidebar />
         <Backdrop />
       </div>
       <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${(isExpanded || isHovered) ? "lg:ml-[98px]" : "lg:ml-[80px]"
+        className={`flex-1 transition-all duration-300 ease-in-out ${(isExpanded || isHovered) ? "lg:ml-[90px]" : "lg:ml-[90px]"
           } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <AppHeader />
