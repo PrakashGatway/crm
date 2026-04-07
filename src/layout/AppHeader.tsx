@@ -85,7 +85,7 @@ const AppHeader: React.FC = () => {
     };
 
     return (
-        <header className="sticky top-0 flex w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 z-50 shadow-sm">
+        <header className="sticky top-0 flex w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 z-50">
             <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
                 {/* Mobile Header Section */}
                 <div className="flex items-center justify-between w-full gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-3">
@@ -112,8 +112,14 @@ const AppHeader: React.FC = () => {
                             alt="Logo"
                         />
                     </Link>
-
-                    {/* Mobile Menu Toggle */}
+                    <div className="flex items-center justify-end">
+                        <div className="sm:flex items-center gap-1 justify-center ">
+                            <p className="text-sm text-gray-500">Welcome back,</p>
+                            <h2 className="text-lg font-semibold text-gray-800">
+                                {user?.name} 👋
+                            </h2>
+                        </div>
+                    </div>
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

@@ -385,13 +385,38 @@ const CallAnalytics = () => {
   );
 
   // Empty State
-  const EmptyState = () => (
-    <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Phone className="w-8 h-8 text-gray-400" />
+const EmptyState = () => (
+  <div className="bg-white dark:bg-gray-800 min-h-[70vh] flex flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-sm">
+    {/* Animated GIF Container */}
+    <div className="relative mb-6">
+      <div className="w-42 h-42 mx-auto relative">
+        {/* Animated ringing phone GIF */}
+        <img 
+          src="https://assets-v2.lottiefiles.com/a/33c74770-1151-11ee-973a-3bc111579927/xBzT3oj0jY.gif"
+          alt="No calls animation"
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            // Fallback to Lottie or static animation if GIF fails to load
+            e.target.src = "https://assets10.lottiefiles.com/packages/lf20_puciaxcq.json";
+          }}
+        />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">No call data available</h3>
-      <p className="text-gray-500 text-sm mb-4">Try adjusting your date range or counselor filter to see analytics</p>
+      
+      {/* Subtle ring animation around the icon */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-40 h-40 rounded-full border-2 border-blue-200 dark:border-blue-800 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
+      </div>
+    </div>
+
+    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+      No Call Data Available
+    </h3>
+    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-md mx-auto">
+      We couldn't find any call records for the selected criteria. Try adjusting your date range or counselor filter to see analytics.
+    </p>
+    
+    {/* Action Buttons */}
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
       <button
         onClick={() => {
           setDays(1);
@@ -400,13 +425,27 @@ const CallAnalytics = () => {
           start.setDate(start.getDate() - 1);
           setDateRange({ startDate: start, endDate: end });
         }}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
       >
         <RefreshCw className="w-4 h-4" />
         Reset to Last 24 Hours
       </button>
+      
+      <button
+        onClick={() => {
+          const end = new Date();
+          const start = new Date();
+          start.setDate(start.getDate() - 7);
+          setDateRange({ startDate: start, endDate: end });
+        }}
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300"
+      >
+        <Calendar className="w-4 h-4" />
+        Last 7 Days
+      </button>
     </div>
-  );
+  </div>
+);
 
   // Error State
   const ErrorState = () => (

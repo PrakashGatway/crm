@@ -136,19 +136,23 @@ export default function LeadManagement() {
     const search = searchParams.get("q");
     const leadId = searchParams.get("lead");
 
+
     setFilters((prev) => ({
       ...prev,
       status: status || "",
       assignedCounselor: counselor || "",
-      search: search || ""
+      search: search ? decodeURIComponent(search) : search
     }));
 
     if (leadId) {
       viewLeadDetails({ _id: leadId });
     }
-    if (status || counselor || search || leadId) {
-      navigate(window.location.pathname, { replace: true });
-    }
+
+    setTimeout(() => {
+      if (status || counselor || search || leadId) {
+        navigate(window.location.pathname, { replace: true });
+      }
+    }, 1000);
   }, [searchParams]);
 
   const formatDateRangeDisplay = () => {

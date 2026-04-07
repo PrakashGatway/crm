@@ -48,7 +48,8 @@ const navItems: NavItem[] = [
 ];
 
 const navItemsUser: NavItem[] = [{ name: "Dashboard", path: "/" }];
-const navItemsCoun: NavItem[] = [{ name: "Dashboard", path: "/" }];
+const navItemsCoun: NavItem[] = [{ name: "Dashboard", path: "/" },
+  { name: "Leads", path: "/leads" },];
 const navItemsMan: NavItem[] = [
   { name: "Dashboard", path: "/" },
   { name: "Call Reports", path: "/lead-report" },
@@ -213,7 +214,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed lg:mt-0 top-0 left-0 bg-white dark:bg-gray-900 h-screen transition-all duration-300 z-50 border-r border-gray-200 dark:border-gray-800
+      className={`fixed lg:mt-0 top-0 left-0 bg-white min-w-[90px] dark:bg-gray-900 h-screen transition-all duration-300 z-50 border-r border-gray-200 dark:border-gray-800
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 `}
     >
@@ -225,7 +226,7 @@ const AppSidebar: React.FC = () => {
             alt="Logo"
             width={50}
             height={30}
-            className="object-contain scale-150"
+            className="object-contain scale-120 shadow-lg rounded-full border-4 border-gray-200 dark:border-gray-700"
           />
         </Link>
       </div>
