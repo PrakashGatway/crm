@@ -1,6 +1,6 @@
 import { motion, LayoutGroup } from "framer-motion";
 import { File, LucideIcon } from "lucide-react";
-import { LeadStatus } from "./LeadManagement";
+import { useAuth } from "../../context/UserContext";
 
 export interface TabItem {
   id: string;
@@ -14,6 +14,8 @@ export default function Tabs({
   onChange,
   className = "",
 }: any) {
+  const { LeadStatus } = useAuth() as any;
+
   return (
     <nav className={className}>
       <LayoutGroup>

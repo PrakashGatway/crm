@@ -5,7 +5,7 @@ import PageMeta from "../../components/common/PageMeta";
 import api from '../../axiosInstance';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { LeadStatus } from '../Leads/LeadManagement';
+// import { LeadStatus } from '../Leads/LeadManagement';
 import {
   SquareArrowOutUpRight, Phone, PhoneIncoming, PhoneMissed, PhoneCall,
   Clock, Users, TrendingUp, TrendingDown, Calendar, Filter, Download,
@@ -29,6 +29,7 @@ const CallAnalytics = () => {
   const [counselorStatusSelections, setCounselorStatusSelections] = useState({});
   const [selectedStatusFilter, setSelectedStatusFilter] = useState(null);
   const [activeChartTab, setActiveChartTab] = useState('performance');
+  const { LeadStatus } = useAuth() as any;
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setDate(new Date().getDate() - 1)),
     endDate: new Date()

@@ -21,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any | null>(null);
+  const [status, setStatus] = useState();
   const [wallet, setWallet] = useState() as any;
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -159,9 +160,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("notifications", JSON.stringify(updated));
   };
 
+  const formatLeadStatus = (data = []) => {
+    return data.reduce((acc, item) => {
+      if (item?.isActive) {
+        acc[item.key] = item.name;
+      }
+      return acc;
+    }, {});
+  };
+
   const fetchUserProfile = async () => {
     try {
-      const response = await api.get('/auth/me');
+      const [leadstatus, response] = await Promise.all([
+        api.get("/status"),
+        api.get('/auth/me')
+      ]);
+      // const response = await api.get('/auth/me');
+      const statusValues =formatLeadStatus(leadstatus?.data?.data)
+      setStatus(statusValues);
       setUser(response.data?.data);
     } catch (err) {
       logout();
@@ -186,6 +202,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     wallet,
     token,
+    LeadStatus: status || {},
     logout,
     loading,
     fetchUserProfile,

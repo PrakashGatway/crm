@@ -36,29 +36,28 @@ import LeadDetailPage from "../LeadDetails";
 //     'inactive'
 // ];
 
-export const LeadStatus = {
-  'new': "Untouched",
-  'notReachable': "Not Reachable",
-  'followup': "Followup",
-  'viewed': "Viewed",
-  'futureLeads': "Future Leads",
-  'interested': "Interested",
-  'notInterested': "Not Interested",
-  'vcBooked': "VC Booked",
-  'vcConducted': "VC Conducted",
-  'enrolled': "Enrolled",
-  'rejected': "Canceled",
-  'junk': "Junk",
-  'closed': "Closed",
-  'visitDone': 'Visit Done',
-  'visitSchedule': "Visit Schedule",
-  'reenquired': "Re-enquired",
-  'inactive': "Inactive",
-  'langBarrier': "Language Barrier",
-  'callback': "Callback",
-  'enquiry': "Enquiry",
-
-};
+// export const LeadStatus = {
+//   'new': "Untouched",
+//   'notReachable': "Not Reachable",
+//   'followup': "Followup",
+//   'viewed': "Viewed",
+//   'futureLeads': "Future Leads",
+//   'interested': "Interested",
+//   'notInterested': "Not Interested",
+//   'vcBooked': "VC Booked",
+//   'vcConducted': "VC Conducted",
+//   'enrolled': "Enrolled",
+//   'rejected': "Canceled",
+//   'junk': "Junk",
+//   'closed': "Closed",
+//   'visitDone': 'Visit Done',
+//   'visitSchedule': "Visit Schedule",
+//   'reenquired': "Re-enquired",
+//   'inactive': "Inactive",
+//   'langBarrier': "Language Barrier",
+//   'callback': "Callback",
+//   'enquiry': "Enquiry",
+// };
 
 
 const LeadSources = [
@@ -100,6 +99,7 @@ export default function LeadManagement() {
   const [selectAll, setSelectAll] = useState(false); // Track "select all" checkbox state
   const [showIncomingCalls, setShowIncomingCalls] = useState(false);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const { LeadStatus } = useAuth() as any;
   const navigate = useNavigate();
   const [filters, setFilters] = useState({
     page: 1,
