@@ -74,9 +74,6 @@ export default function App() {
                 <Route path="/leads" element={<LeadManagement />} />
                 <Route path="/leads/:id" element={<LeadDetailPage />} />
                 <Route path="/leadsss" element={<LeadDetailPageM />} />
-
-
-
                  <Route path="/lead-report" element={<DailyReport />} /> 
               </Route>
 

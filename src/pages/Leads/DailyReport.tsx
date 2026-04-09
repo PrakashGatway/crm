@@ -20,6 +20,7 @@ import {
 import { toast } from "react-toastify";
 import api from "../../axiosInstance";
 import { useAuth } from "../../context/UserContext";
+import { useNavigate } from "react-router";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -239,6 +240,8 @@ export default function DailyReport() {
     const [playingId, setPlayingId] = useState(null);
     const [page, setPage] = useState(1);
     const LIMIT = 20;
+    const navigate = useNavigate();
+
 
     // Fetch counselor list once on mount
     useEffect(() => {
@@ -466,7 +469,7 @@ export default function DailyReport() {
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-right">
                                                 <button
-                                                    onClick={() => setSelectedCall(call)}
+                                                    onClick={() => navigate(`/leads?q=${call.lead?.phone10 || call.lead?.phone || ""}&name=${call.lead?.fullName || ""}&lead=${call.lead?.id}`)}
                                                     className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline transition-opacity"
                                                 >
                                                     Details →
