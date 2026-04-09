@@ -8,7 +8,7 @@ import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
 import { toast } from "react-toastify";
 import api from "../../axiosInstance";
-import { Activity, ArrowRight, Eye, Filter, MessageCircleCode, MessageSquare, Pencil, Phone, PhoneCall, PhoneCallIcon, PhoneIncomingIcon, PhoneMissed, PhoneMissedIcon, PhoneOutgoingIcon, Target, Trash2, Upload, User, X } from "lucide-react";
+import { Activity, ArrowRight, Eye, Filter, Pencil, Phone, PhoneCall, PhoneCallIcon, PhoneIncomingIcon, PhoneMissed, PhoneMissedIcon, PhoneOutgoingIcon, Target, Trash2, Upload, User, X } from "lucide-react";
 // import TextArea from "../../components/form/input/TextArea";
 import { useAuth } from "../../context/UserContext";
 import ExcelUpload from "./ExcelUpload";
@@ -1218,6 +1218,18 @@ export default function LeadManagement() {
           </div>
           {total > 0 && (
             <div className="mt-4 flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
+              
+                <select
+                  name="limit"
+                  value={filters.limit}
+                  onChange={handleFilterChange}
+                  className="rounded-md border border-gray-300 bg-white py-1 px-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
               <div className="text-sm text-gray-500 dark:text-gray-300">
                 Showing <span className="font-medium">{(filters.page - 1) * filters.limit + 1}</span> to{" "}
                 <span className="font-medium">{Math.min(filters.page * filters.limit, total)}</span> of{" "}
