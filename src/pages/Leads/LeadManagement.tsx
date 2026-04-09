@@ -1388,7 +1388,7 @@ export default function LeadManagement() {
       </div>
       {/* <LeadModal isOpen={isOpen} closeModal={closeModal} selectedLead={selectedLead} handleAddNote={handleAddNote} newNote={newNote} setNewNote={setNewNote} user={user} getStatusColor={getStatusColor} /> */}
 
-      <CreateLeadForm key={selectedLead?._id} editModalOpen={editModalOpen} setEditModalOpen={setEditModalOpen} selectedLead={selectedLead} handleCreateLead={handleCreateLead} handleSaveLead={handleSaveLead} formData={formData} setFormData={setFormData} handleChange={handleChange} errors={errors} setErrors={setErrors} user={user} allCounselors={allCounselors} />
+      <CreateLeadForm key={selectedLead?._id} LeadStatus={LeadStatus} editModalOpen={editModalOpen} setEditModalOpen={setEditModalOpen} selectedLead={selectedLead} handleCreateLead={handleCreateLead} handleSaveLead={handleSaveLead} formData={formData} setFormData={setFormData} handleChange={handleChange} errors={errors} setErrors={setErrors} user={user} allCounselors={allCounselors} />
 
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} className="max-w-lg">
         {selectedLead && (
@@ -1650,7 +1650,7 @@ export default function LeadManagement() {
 // }
 
 
-function CreateLeadForm({ editModalOpen, setEditModalOpen, selectedLead, handleCreateLead, handleSaveLead, formData, setFormData, handleChange, errors, setErrors, user, allCounselors }: any) {
+function CreateLeadForm({ editModalOpen, setEditModalOpen, LeadStatus, selectedLead, handleCreateLead, handleSaveLead, formData, setFormData, handleChange, errors, setErrors, user, allCounselors }: any) {
   // State for description and follow-up date
   const [statusChangeDescription, setStatusChangeDescription] = useState("");
   const [nextFollowupDate, setNextFollowupDate] = useState("");

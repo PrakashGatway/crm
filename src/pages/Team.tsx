@@ -364,11 +364,11 @@ export default function TeamManagement() {
                                         </Button>
                                     </div>
                                     <List dense disablePadding className="!p-0">
-                                        {team.members.length === 0 ? (
+                                        {team?.members.length === 0 ? (
                                             <span className="text-xs text-gray-500 block py-2">No members yet</span>
                                         ) : (
-                                            team.members.map((member) => (
-                                                <ListItem key={member.user._id} disableGutters className="!py-1 !px-0">
+                                            team?.members?.map((member) => (
+                                                <ListItem key={member?.user?._id} disableGutters className="!py-1 !px-0">
                                                     <ListItemAvatar sx={{ minWidth: 36 }}>
                                                         <Avatar
                                                             sx={{
@@ -378,23 +378,23 @@ export default function TeamManagement() {
                                                                 fontSize: 14,
                                                             }}
                                                         >
-                                                            {member.user.name?.charAt(0).toUpperCase() || 'U'}
+                                                            {member?.user?.name?.charAt(0).toUpperCase() || 'U'}
                                                         </Avatar>
                                                     </ListItemAvatar>
                                                     <ListItemText
                                                         primary={
                                                             <span className="text-sm font-medium text-gray-900">
-                                                                {member.user.name || member.user.email}
+                                                                {member?.user?.name || member?.user?.email}
                                                             </span>
                                                         }
                                                         secondary={
-                                                            <span className="text-xs text-gray-500">{member.user.role}</span>
+                                                            <span className="text-xs text-gray-500">{member?.user?.role}</span>
                                                         }
                                                     />
                                                     <Tooltip title="Remove member">
                                                         <IconButton
                                                             size="small"
-                                                            onClick={() => handleRemoveMember(team._id!, member.user._id)}
+                                                            onClick={() => handleRemoveMember(team._id!, member?.user._id)}
                                                             className="!text-red-500 hover:!bg-red-50"
                                                         >
                                                             <PersonRemoveIcon fontSize="small" />

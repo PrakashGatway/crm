@@ -286,12 +286,12 @@ export default function LeadAssignmentManagement() {
     // Extract members from populated team object (backend structure)
     const getTeamMembers = (config: LeadAssignmentConfig): TeamMember[] => {
         // If team is populated from backend
-        if (config.team?.members) {
-            return config.team.members;
+        if (config?.team?.members) {
+            return config?.team?.members;
         }
         // Fallback: find team in local state
-        const teamId = typeof config.teamId === 'string' ? config.teamId : config.teamId._id;
-        const team = teams.find(t => t._id === teamId);
+        const teamId = typeof config.teamId === 'string' ? config?.teamId : config?.teamId?._id;
+        const team = teams?.find(t => t._id === teamId);
         return team?.members || [];
     };
 
