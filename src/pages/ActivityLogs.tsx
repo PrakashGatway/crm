@@ -548,7 +548,7 @@ const ActivityLogsContent = ({
                                                 if (activity?.type === "call") {
                                                     const callType = activity?.callDetails?.callType || activity?.extraDetails?.cType;
                                                     if (callType === "IBD") return "Incoming";
-                                                    if (callType === "OBD") return "Outgoing";
+                                                    if (callType === "CTC") return "Outgoing";
                                                     return activity?.extraDetails?.HangupBySourceDetected === 1 ? "Outgoing" : "Incoming";
                                                 }
                                                 return null;

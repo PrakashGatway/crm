@@ -46,6 +46,9 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import api from '../../axiosInstance';
 import EmailTemplatesList from './TemplateList';
+import TeamManagement from '../Team';
+import { GroupIcon } from 'lucide-react';
+import WhatsAppTemplateEditor from './whatsappTemplate';
 
 interface LeadStatus {
   _id?: string;
@@ -277,8 +280,10 @@ export default function LeadStatusPage() {
     const labels: Record<TabType, string> = {
       statuses: 'Statuses',
       leads: 'Leads',
+      teams: 'Teams',
       settings: 'Settings',
       emailEditor: 'Email Templates',
+      whatsapp: 'WhatsApp Templates',
     };
     return labels[tab];
   };
@@ -286,10 +291,11 @@ export default function LeadStatusPage() {
   const getTabIcon = (tab: TabType) => {
     const icons: Record<TabType, JSX.Element> = {
       statuses: <LabelIcon fontSize="small" />,
+      teams: <GroupIcon fontSize="small" />,
       leads: <ListIcon fontSize="small" />,
       settings: <SettingsIcon fontSize="small" />,
-      emailEditor: <SettingsIcon fontSize="small" />
-
+      emailEditor: <SettingsIcon fontSize="small" />,
+      whatsapp: <SettingsIcon fontSize="small" />,
     };
     return icons[tab];
   };
@@ -303,11 +309,11 @@ export default function LeadStatusPage() {
       {/* ─── Animated Tabs with Framer Motion ─── */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
         <div className="relative flex gap-1">
-          {(['statuses',"emailEditor"] as TabType[]).map((tab) => (
+          {(['statuses', "emailEditor", "teams"] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative flex items-center justify-center gap-2 py-3 px-5 rounded-xl text-sm font-medium transition-colors ${activeTab === tab
+              className={`relative flex items-center justify-center gap-2 py-2 px-5 rounded-xl text-sm font-medium transition-colors ${activeTab === tab
                 ? 'text-white'
                 : 'text-white/50 hover:text-white'
                 }`}
@@ -581,8 +587,12 @@ export default function LeadStatusPage() {
         {/* ═══════════════════════════════════════════════════
                     LEADS TAB (Placeholder)
                     ═══════════════════════════════════════════════════ */}
-        {activeTab === 'leads' && (
-          <EmailTemplatesList />
+        {activeTab === 'teams' && (
+          <TeamManagement />
+        )}
+
+        {activeTab === 'whatsapp' && (
+          <WhatsAppTemplateEditor />
         )}
 
         {/* ═══════════════════════════════════════════════════

@@ -40,8 +40,8 @@ api.interceptors.response.use(
   }
 );
 
-export const ImageBaseUrl = "https://uat.gatewayabroadeducations.com/uploads"
-export const audioBaseUrl = "https://uat.gatewayabroadeducations.com/"
+export const ImageBaseUrl = "https://server.gatewayabroadeducations.com/uploads"
+export const audioBaseUrl = "https://server.gatewayabroadeducations.com/"
 
 
 export default api;

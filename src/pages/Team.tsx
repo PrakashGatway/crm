@@ -269,7 +269,7 @@ export default function TeamManagement() {
     };
 
     return (
-        <div className="p-4 mx-auto">
+        <div className="mx-auto">
             {/* Header Section */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-4 mb-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

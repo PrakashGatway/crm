@@ -1,0 +1,1356 @@
+// WhatsAppTemplateEditor.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
+  IconButton,
+  Paper,
+  CircularProgress,
+  Alert,
+  Snackbar,
+  Stepper,
+  Step,
+  StepLabel,
+  Card,
+  CardContent,
+  Typography,
+  LinearProgress,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  WhatsApp as WhatsAppIcon,
+  Phone as PhoneIcon,
+  Link as LinkIcon,
+  Message as MessageIcon,
+  Visibility as VisibilityIcon,
+  Edit as EditIcon,
+  Send as SendIcon,
+  ContentCopy as ContentCopyIcon,
+  Smartphone as SmartphoneIcon,
+  Image as ImageIcon,
+  VideoLibrary as VideoIcon,
+  AttachFile as FileIcon,
+  LocationOn as LocationIcon,
+  ViewCarousel as CarouselIcon,
+  ShoppingCart as OrderIcon,
+  Close as CloseIcon,
+  Upload as UploadIcon,
+  PlayArrow as PlayIcon,
+  Pause as PauseIcon,
+} from '@mui/icons-material';
+import { toast } from 'react-toastify';
+import api from '../../axiosInstance';
+
+// Types
+interface WhatsAppTemplate {
+  id?: string;
+  name: string;
+  label: string;
+  category: 'MARKETING' | 'TRANSACTIONAL' | 'OTP' | 'UTILITY';
+  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE' | 'LOCATION' | 'CAROUSEL' | 'ORDER_DETAILS';
+  language: string;
+  text: string;
+  sample_text: string;
+  header_text?: string;
+  footer_text?: string;
+  header_type?: 'TEXT' | 'IMAGE' | 'VIDEO';
+  header_media?: string;
+  header_media_url?: string;
+  media_file?: File | null;
+  carousel_cards?: Array<{
+    title: string;
+    description: string;
+    media_url?: string;
+    buttons?: Array<{
+      type: string;
+      button_value: string;
+      button_title: string;
+    }>;
+  }>;
+  order_details?: {
+    order_id: string;
+    items: Array<{
+      name: string;
+      quantity: number;
+      price: number;
+      image_url?: string;
+    }>;
+    total_amount: number;
+    currency: string;
+  };
+  message_action_type?: 'CTA' | 'QuickReplies' | 'All' | 'None';
+  call_to_action?: Array<{
+    type: 'Phone Number' | 'URL';
+    button_value: string;
+    button_title: string;
+  }>;
+  quick_replies?: string[];
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  total_parameters?: number;
+}
+
+interface Parameter {
+  id: string;
+  name: string;
+  placeholder: string;
+  example: string;
+}
+
+interface CarouselCard {
+  id: string;
+  title: string;
+  description: string;
+  media_url: string;
+  media_file?: File | null;
+  buttons: Array<{
+    type: 'Phone Number' | 'URL';
+    button_value: string;
+    button_title: string;
+  }>;
+}
+
+// Language options
+const LANGUAGES = [
+  'English', 'English (UK)', 'English (US)', 'Hindi', 'Arabic', 'Spanish', 'French',
+  'German', 'Italian', 'Portuguese (BR)', 'Portuguese (POR)', 'Russian', 'Chinese (CHN)',
+  'Japanese', 'Korean', 'Turkish', 'Vietnamese', 'Thai', 'Indonesian', 'Malay',
+];
+
+// Categories
+const CATEGORIES = [
+  { value: 'MARKETING', label: 'Marketing', color: 'bg-purple-100 text-purple-700', icon: '📢' },
+  { value: 'AUTHENTICATION', label: 'Authentication', color: 'bg-blue-100 text-blue-700', icon: '🔐' },
+  { value: 'UTILITY', label: 'Utility', color: 'bg-orange-100 text-orange-700', icon: '⚙️' },
+];
+
+// Template types with configurations
+const TEMPLATE_TYPES = [
+  { value: 'TEXT', label: 'Text Message', icon: <MessageIcon />, description: 'Simple text message with optional parameters' },
+  { value: 'IMAGE', label: 'Image Message', icon: <ImageIcon />, description: 'Message with an image attachment' },
+  { value: 'VIDEO', label: 'Video Message', icon: <VideoIcon />, description: 'Message with a video attachment' },
+  { value: 'FILE', label: 'File Message', icon: <FileIcon />, description: 'Message with a document/file attachment' },
+  { value: 'LOCATION', label: 'Location Message', icon: <LocationIcon />, description: 'Share a location with map preview' },
+  { value: 'CAROUSEL', label: 'Carousel Message', icon: <CarouselIcon />, description: 'Multiple cards in a carousel' },
+  { value: 'ORDER_DETAILS', label: 'Order Details', icon: <OrderIcon />, description: 'Order summary with items list' },
+];
+
+export default function WhatsAppTemplateEditor() {
+  const [submitting, setSubmitting] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const [showPreview, setShowPreview] = useState(true);
+  const [parameters, setParameters] = useState<Parameter[]>([]);
+  const [previewValues, setPreviewValues] = useState<Record<string, string>>({});
+  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string>('');
+  const [carouselCards, setCarouselCards] = useState<CarouselCard[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const [formData, setFormData] = useState<WhatsAppTemplate>({
+    name: '',
+    label: '',
+    category: 'MARKETING',
+    type: 'TEXT',
+    language: 'English',
+    text: '',
+    sample_text: '',
+    header_text: '',
+    footer_text: '',
+    header_type: 'TEXT',
+    message_action_type: 'None',
+    call_to_action: [],
+    quick_replies: [],
+    carousel_cards: [],
+    order_details: {
+      order_id: '',
+      items: [],
+      total_amount: 0,
+      currency: 'USD',
+    },
+  });
+
+  // Extract parameters from text
+  useEffect(() => {
+    const paramRegex = /{{(\d+)}}/g;
+    const matches = [...formData.text.matchAll(paramRegex)];
+    const uniqueParams = [...new Set(matches.map(m => m[1]))];
+
+    const newParams: Parameter[] = uniqueParams.map((param, index) => ({
+      id: `param_${param}`,
+      name: `Parameter ${param}`,
+      placeholder: `{{${param}}}`,
+      example: `Sample ${param}`,
+    }));
+
+    setParameters(newParams);
+
+    const newPreviewValues: Record<string, string> = {};
+    newParams.forEach(param => {
+      if (!previewValues[param.id]) {
+        newPreviewValues[param.id] = param.example;
+      }
+    });
+    setPreviewValues(prev => ({ ...prev, ...newPreviewValues }));
+  }, [formData.text]);
+
+  // Generate sample text
+  useEffect(() => {
+    let sample = formData.text;
+    parameters.forEach((param, index) => {
+      sample = sample.replace(`{{${index + 1}}}`, `[${previewValues[param.id] || param.example}]`);
+    });
+    setFormData(prev => ({ ...prev, sample_text: sample }));
+  }, [formData.text, parameters, previewValues]);
+
+  const handleMediaUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await api.post("/upload", formData);
+
+    const url = res.data.url;
+
+    setMediaPreview(url);
+
+    setFormData(prev => ({
+      ...prev,
+      header_media: url,
+    }));
+  };
+
+  const handleCarouselCardMedia = (cardId: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCarouselCards(prev => prev.map(card =>
+        card.id === cardId
+          ? { ...card, media_url: e.target?.result as string, media_file: file }
+          : card
+      ));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addCarouselCard = () => {
+    const newCard: CarouselCard = {
+      id: `card_${Date.now()}`,
+      title: '',
+      description: '',
+      media_url: '',
+      buttons: [],
+    };
+    setCarouselCards([...carouselCards, newCard]);
+    setFormData(prev => ({
+      ...prev,
+      carousel_cards: [...(prev.carousel_cards || []), newCard]
+    }));
+  };
+
+  const updateCarouselCard = (cardId: string, field: string, value: any) => {
+    setCarouselCards(prev => prev.map(card =>
+      card.id === cardId ? { ...card, [field]: value } : card
+    ));
+    setFormData(prev => ({
+      ...prev,
+      carousel_cards: carouselCards.map(card =>
+        card.id === cardId ? { ...card, [field]: value } : card
+      )
+    }));
+  };
+
+  const removeCarouselCard = (cardId: string) => {
+    setCarouselCards(prev => prev.filter(card => card.id !== cardId));
+    setFormData(prev => ({
+      ...prev,
+      carousel_cards: prev.carousel_cards?.filter(card => card.id !== cardId)
+    }));
+  };
+
+  const addCarouselCardButton = (cardId: string) => {
+    const newButton = { type: 'URL' as const, button_value: '', button_title: '' };
+    setCarouselCards(prev => prev.map(card =>
+      card.id === cardId
+        ? { ...card, buttons: [...card.buttons, newButton] }
+        : card
+    ));
+  };
+
+  const updateCarouselCardButton = (cardId: string, buttonIndex: number, field: string, value: string) => {
+    setCarouselCards(prev => prev.map(card =>
+      card.id === cardId
+        ? {
+          ...card,
+          buttons: card.buttons.map((btn, idx) =>
+            idx === buttonIndex ? { ...btn, [field]: value } : btn
+          )
+        }
+        : card
+    ));
+  };
+
+  const removeCarouselCardButton = (cardId: string, buttonIndex: number) => {
+    setCarouselCards(prev => prev.map(card =>
+      card.id === cardId
+        ? { ...card, buttons: card.buttons.filter((_, idx) => idx !== buttonIndex) }
+        : card
+    ));
+  };
+
+  // Order details handlers
+  const addOrderItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      order_details: {
+        ...prev.order_details!,
+        items: [
+          ...(prev.order_details?.items || []),
+          { name: '', quantity: 1, price: 0, image_url: '' }
+        ]
+      }
+    }));
+  };
+
+  const updateOrderItem = (index: number, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      order_details: {
+        ...prev.order_details!,
+        items: prev.order_details!.items.map((item, idx) =>
+          idx === index ? { ...item, [field]: value } : item
+        )
+      }
+    }));
+  };
+
+  const removeOrderItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      order_details: {
+        ...prev.order_details!,
+        items: prev.order_details!.items.filter((_, idx) => idx !== index)
+      }
+    }));
+  };
+
+  // Handle CTA buttons
+  const addCTAButton = () => {
+    setFormData(prev => ({
+      ...prev,
+      call_to_action: [...(prev.call_to_action || []), { type: 'URL', button_value: '', button_title: '' }]
+    }));
+  };
+
+  const updateCTAButton = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      call_to_action: prev.call_to_action?.map((btn, i) =>
+        i === index ? { ...btn, [field]: value } : btn
+      )
+    }));
+  };
+
+  const removeCTAButton = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      call_to_action: prev.call_to_action?.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Handle quick replies
+  const addQuickReply = () => {
+    setFormData(prev => ({
+      ...prev,
+      quick_replies: [...(prev.quick_replies || []), '']
+    }));
+  };
+
+  const updateQuickReply = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      quick_replies: prev.quick_replies?.map((reply, i) => i === index ? value : reply)
+    }));
+  };
+
+  const removeQuickReply = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      quick_replies: prev.quick_replies?.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Submit template
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.label || !formData.text) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    if (formData.message_action_type === 'CTA' && (!formData.call_to_action || formData.call_to_action.length === 0)) {
+      toast.error('Please add at least one CTA button');
+      return;
+    }
+
+    if (formData.type === 'CAROUSEL' && carouselCards.length === 0) {
+      toast.error('Please add at least one carousel card');
+      return;
+    }
+
+    setSubmitting(true);
+    setUploadProgress(0);
+
+    try {
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
+      const payload: any = {
+        label: formData.label,
+        category: formData.category,
+        type: formData.type,
+        language: formData.language,
+        name: formData.name.toLowerCase().replace(/\s+/g, '_'),
+        text: formData.text,
+        sample_text: formData.sample_text,
+        footer_text: formData.footer_text,
+        message_action_type: formData.message_action_type === 'None' ? undefined : formData.message_action_type,
+        call_to_action: formData.message_action_type === 'CTA' ? formData.call_to_action : undefined,
+        quick_replies: formData.message_action_type === 'QuickReplies' ? formData.quick_replies : undefined,
+      };
+
+      // Add header based on type
+      if (formData.type !== 'TEXT' && formData.header_text) {
+        payload.header_text = formData.header_text;
+      }
+
+      if (formData.type === 'IMAGE' && mediaPreview) {
+        payload.header_type = 'IMAGE';
+        payload.header_media = mediaPreview;
+      }
+
+      if (formData.type === 'VIDEO' && mediaPreview) {
+        payload.header_type = 'VIDEO';
+        payload.header_media = mediaPreview;
+      }
+
+      if (formData.type === 'CAROUSEL') {
+        payload.carousel_cards = carouselCards.map(card => ({
+          title: card.title,
+          description: card.description,
+          media_url: card.media_url,
+          buttons: card.buttons,
+        }));
+      }
+
+      if (formData.type === 'ORDER_DETAILS') {
+        payload.order_details = formData.order_details;
+      }
+
+      const response = await api.post('/ws/templates', payload);
+
+      clearInterval(interval);
+      setUploadProgress(100);
+
+      setTimeout(() => {
+        toast.success('Template submitted successfully! Waiting for approval.');
+        resetForm();
+        // loadTemplates();
+        setActiveStep(0);
+        setUploadProgress(0);
+      }, 500);
+    } catch (error: any) {
+      console.error('Error submitting template:', error);
+      toast.error(error.response?.data?.message || 'Failed to submit template');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      label: '',
+      category: 'MARKETING',
+      type: 'TEXT',
+      language: 'English',
+      text: '',
+      sample_text: '',
+      header_text: '',
+      footer_text: '',
+      header_type: 'TEXT',
+      message_action_type: 'None',
+      call_to_action: [],
+      quick_replies: [],
+    });
+    setSelectedMedia(null);
+    setMediaPreview('');
+    setCarouselCards([]);
+    setParameters([]);
+    setPreviewValues({});
+  };
+
+  // Render preview based on template type
+  const renderWhatsAppPreview = () => {
+    const renderMediaPreview = () => {
+      if (formData.type === 'IMAGE' && mediaPreview) {
+        return (
+          <div className="mb-2 rounded-lg overflow-hidden">
+            <img src={mediaPreview} alt="Preview" className="w-full h-48 object-cover" />
+          </div>
+        );
+      }
+      if (formData.type === 'VIDEO' && mediaPreview) {
+        return (
+          <div className="mb-2 rounded-lg overflow-hidden relative">
+            <video
+              ref={videoRef}
+              src={mediaPreview}
+              className="w-full h-48 object-cover"
+              onClick={() => {
+                if (videoRef.current) {
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                  } else {
+                    videoRef.current.play();
+                  }
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+            />
+            <button
+              className="absolute bottom-2 right-2 bg-black/50 rounded-full p-1"
+              onClick={() => {
+                if (videoRef.current) {
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                  } else {
+                    videoRef.current.play();
+                  }
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+            >
+              {isPlaying ? <PauseIcon className="text-white text-sm" /> : <PlayIcon className="text-white text-sm" />}
+            </button>
+          </div>
+        );
+      }
+      if (formData.type === 'FILE' && selectedMedia) {
+        return (
+          <div className="mb-2 bg-gray-100 rounded-lg p-3 flex items-center gap-2">
+            <FileIcon className="text-gray-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{selectedMedia.name}</p>
+              <p className="text-xs text-gray-500">{(selectedMedia.size / 1024).toFixed(2)} KB</p>
+            </div>
+          </div>
+        );
+      }
+      if (formData.type === 'LOCATION') {
+        return (
+          <div className="mb-2 bg-blue-100 rounded-lg p-3 flex items-center gap-2">
+            <LocationIcon className="text-blue-600" />
+            <div>
+              <p className="text-sm font-medium">📍 Location Shared</p>
+              <p className="text-xs text-gray-600">123 Business St, City, Country</p>
+            </div>
+          </div>
+        );
+      }
+      return null;
+    };
+
+    const renderCarouselPreview = () => {
+      if (formData.type !== 'CAROUSEL' || carouselCards.length === 0) return null;
+
+      return (
+        <div className="mb-2 overflow-x-auto flex gap-3 pb-2">
+          {carouselCards.map((card, idx) => (
+            <div key={card.id} className="min-w-[200px] bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {card.media_url && (
+                <img src={card.media_url} alt={card.title} className="w-full h-32 object-cover" />
+              )}
+              <div className="p-2">
+                <p className="font-semibold text-sm">{card.title}</p>
+                <p className="text-xs text-gray-600 mt-1">{card.description}</p>
+                {card.buttons.map((btn, btnIdx) => (
+                  <div key={btnIdx} className="mt-2 bg-green-50 rounded text-center py-1">
+                    <span className="text-xs text-green-700">{btn.button_title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    const renderOrderDetailsPreview = () => {
+      if (formData.type !== 'ORDER_DETAILS' || !formData.order_details) return null;
+
+      const total = formData.order_details.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      return (
+        <div className="mb-2 bg-white rounded-lg border border-gray-200 p-3">
+          <div className="flex justify-between items-center mb-2 pb-2 border-b">
+            <p className="font-semibold text-sm">Order #{formData.order_details.order_id}</p>
+            <p className="text-xs text-gray-500">{formData.order_details.currency}</p>
+          </div>
+          {formData.order_details.items.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center mb-2 text-sm">
+              <div className="flex-1">
+                <p className="font-medium">{item.name}</p>
+                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+              </div>
+              <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+            </div>
+          ))}
+          <div className="mt-2 pt-2 border-t flex justify-between">
+            <p className="font-semibold">Total</p>
+            <p className="font-semibold">${total.toFixed(2)}</p>
+          </div>
+        </div>
+      );
+    };
+
+    const renderMessageWithParameters = () => {
+      let message = formData.sample_text || formData.text;
+      return message;
+    };
+
+    return (
+      <div className="bg-gray-100 rounded-2xl max-w-md mx-auto shadow-xl">
+        {/* Header */}
+        <div className="bg-green-600 rounded-t-2xl p-3 flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+            <WhatsAppIcon className="text-green-600" />
+          </div>
+          <div className="flex-1">
+            <div className="text-white font-semibold">WhatsApp</div>
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        <div className="bg-[#efeae2] min-h-[380px] rounded-b-2xl p-4">
+          <div className="flex justify-start mb-4">
+            <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-none p-3 shadow-sm">
+              {/* Header Type Label */}
+              {formData.type !== 'TEXT' && (
+                <div className="mb-2 pb-2 border-b border-gray-200 flex items-center gap-1">
+                  {formData.type === 'IMAGE' && <ImageIcon className="text-green-600 text-sm" />}
+                  {formData.type === 'VIDEO' && <VideoIcon className="text-green-600 text-sm" />}
+                  {formData.type === 'FILE' && <FileIcon className="text-green-600 text-sm" />}
+                  {formData.type === 'LOCATION' && <LocationIcon className="text-green-600 text-sm" />}
+                  {formData.type === 'CAROUSEL' && <CarouselIcon className="text-green-600 text-sm" />}
+                  {formData.type === 'ORDER_DETAILS' && <OrderIcon className="text-green-600 text-sm" />}
+                  <span className="text-xs font-medium text-green-600">{formData.type}</span>
+                </div>
+              )}
+
+              {/* Header Text */}
+              {formData.header_text && (
+                <div className="mb-2 pb-2 border-b border-gray-200">
+                  <p className="text-sm font-semibold text-gray-800">{formData.header_text}</p>
+                </div>
+              )}
+
+              {/* Media/Content Preview */}
+              {renderMediaPreview()}
+              {renderCarouselPreview()}
+              {renderOrderDetailsPreview()}
+
+              {/* Body Text */}
+              <p className="text-gray-800 text-sm whitespace-pre-wrap">
+                {renderMessageWithParameters()}
+              </p>
+
+              {/* Footer */}
+              {formData.footer_text && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">{formData.footer_text}</p>
+                </div>
+              )}
+
+              {/* Interactive Buttons */}
+              {formData.message_action_type === 'CTA' && formData.call_to_action && formData.call_to_action.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {formData.call_to_action.map((btn, idx) => (
+                    <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-2 text-center hover:bg-green-100 transition-colors cursor-pointer">
+                      {btn.type === 'Phone Number' ? (
+                        <PhoneIcon className="text-green-600 text-sm mr-1" />
+                      ) : (
+                        <LinkIcon className="text-green-600 text-sm mr-1" />
+                      )}
+                      <span className="text-green-700 text-sm font-medium">{btn.button_title}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Quick Replies */}
+              {formData.message_action_type === 'QuickReplies' && formData.quick_replies && formData.quick_replies.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.quick_replies.map((reply, idx) => (
+                    <div key={idx} className="bg-gray-100 rounded-full px-3 py-1 hover:bg-gray-200 transition-colors cursor-pointer">
+                      <span className="text-xs text-gray-700">{reply}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const steps = ['Template Details', 'Message Content', 'Media & Interactive', 'Preview & Submit'];
+
+  return (
+    <div className="min-h-[70vh] bg-gray-50">
+      {/* Header */}
+      <div className="bg-white px-6 sticky top-0 z-10">
+        <div className="flex justify-between items-center">
+          <div>
+
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outlined"
+              onClick={() => setShowPreview(!showPreview)}
+              startIcon={<SmartphoneIcon />}
+              className="!capitalize"
+            >
+              {showPreview ? 'Hide Preview' : 'Show Preview'}
+            </Button>
+            <Button
+              variant="contained"
+              className="!bg-green-600 hover:!bg-green-700 !capitalize"
+              onClick={handleSubmit}
+              disabled={submitting}
+              startIcon={submitting ? <CircularProgress size={20} /> : <WhatsAppIcon />}
+            >
+              {submitting ? 'Submitting...' : 'Submit Template'}
+            </Button>
+          </div>
+        </div>
+        {submitting && (
+          <div className="mt-3">
+            <LinearProgress variant="determinate" value={uploadProgress} />
+            <p className="text-xs text-gray-500 mt-1">Uploading media... {uploadProgress}%</p>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex">
+        {/* Editor Section */}
+        <div className={`flex-1 overflow-y-auto  ${showPreview ? 'w-1/2' : 'w-full'}`}>
+          <Paper className="p-6 rounded-xl">
+            <Stepper activeStep={activeStep} className="mb-8">
+              {steps.map((label, index) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+
+            {/* Step 1: Template Details */}
+            {activeStep === 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4 flex flex-col gap-4"
+              >
+                <TextField
+                  fullWidth
+                  variant='standard'
+                  label="Template Name *"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  helperText="Unique identifier for this template (lowercase, no spaces)"
+                  placeholder="welcome_message"
+                />
+
+                <TextField
+                  fullWidth
+                  variant='standard'
+
+                  label="Template Label *"
+                  value={formData.label}
+                  onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
+                  helperText="Display name for this template"
+                  placeholder="Welcome Message"
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormControl fullWidth>
+                    <InputLabel>Category *</InputLabel>
+                    <Select
+                      variant='standard'
+
+                      value={formData.category}
+                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
+                      label="Category *"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <MenuItem key={cat.value} value={cat.value}>
+                          <div className="flex items-center gap-2 py-1">
+                            <span>{cat.icon}</span>
+                            <span>{cat.label}</span>
+                          </div>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl fullWidth>
+                    <InputLabel>Template Type *</InputLabel>
+                    <Select
+                      variant='standard'
+
+                      value={formData.type}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, type: e.target.value as any }));
+                        if (e.target.value === 'CAROUSEL' && carouselCards.length === 0) {
+                          addCarouselCard();
+                        }
+                      }}
+                      label="Template Type *"
+                    >
+                      {TEMPLATE_TYPES.map(type => (
+                        <MenuItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2 py-1">
+                            {type.icon}
+                            <div>
+                              <div>{type.label}</div>
+                              {/* <div className="text-xs text-gray-500">{type.description}</div> */}
+                            </div>
+                          </div>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
+
+                <FormControl fullWidth>
+                  <InputLabel>Language *</InputLabel>
+                  <Select
+                    variant='standard'
+                    className='pb-2'
+                    value={formData.language}
+                    onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
+                    label="Language *"
+                  >
+                    {LANGUAGES.map(lang => (
+                      <MenuItem key={lang} value={lang}>{lang}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </motion.div>
+            )}
+
+            {/* Step 2: Message Content */}
+            {activeStep === 1 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex flex-col gap-4"
+              >
+                <TextField
+                  fullWidth
+                  variant='standard'
+                  multiline
+                  rows={4}
+                  label="Message Body *"
+                  value={formData.text}
+                  onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
+                  helperText="Use {{1}}, {{2}}, etc. for dynamic parameters"
+                  placeholder="Hello {{1}}, your order #{{2}} has been confirmed!"
+                />
+
+                {parameters.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <Typography variant="subtitle2" className="mb-2 flex items-center gap-1">
+                      <MessageIcon fontSize="small" />
+                      Dynamic Parameters
+                    </Typography>
+                    <div className="space-y-2">
+                      {parameters.map((param, idx) => (
+                        <TextField
+                          key={param.id}
+                          variant='standard'
+                          size="small"
+                          label={`Example for {{${idx + 1}}}`}
+                          value={previewValues[param.id] || ''}
+                          onChange={(e) => setPreviewValues(prev => ({ ...prev, [param.id]: e.target.value }))}
+                          placeholder={`Enter example value for parameter ${idx + 1}`}
+                          fullWidth
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <TextField
+                  fullWidth
+                  variant='standard'
+                  label="Header Text (Optional)"
+                  value={formData.header_text}
+                  onChange={(e) => setFormData(prev => ({ ...prev, header_text: e.target.value }))}
+                  placeholder="Appears above the message body"
+                />
+
+                <TextField
+                  fullWidth
+                  variant='standard'
+                  label="Footer Text (Optional)"
+                  value={formData.footer_text}
+                  onChange={(e) => setFormData(prev => ({ ...prev, footer_text: e.target.value }))}
+                  placeholder="Appears below the message body"
+                />
+              </motion.div>
+            )}
+
+            {/* Step 3: Media & Interactive Elements */}
+            {activeStep === 2 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex flex-col gap-4"
+              >
+                {/* Media Upload for non-text types */}
+                {formData.type !== 'TEXT' && formData.type !== 'CAROUSEL' && formData.type !== 'ORDER_DETAILS' && (
+                  <div className="space-y-3">
+                    <Typography variant="subtitle1">
+                      {formData.type === 'IMAGE' && 'Upload Image'}
+                      {formData.type === 'VIDEO' && 'Upload Video'}
+                      {formData.type === 'FILE' && 'Upload File'}
+                      {formData.type === 'LOCATION' && 'Location Details'}
+                    </Typography>
+
+                    {formData.type === 'LOCATION' ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextField variant='standard' label="Latitude" type="number" placeholder="40.7128" fullWidth />
+                        <TextField variant='standard' label="Longitude" type="number" placeholder="-74.0060" fullWidth />
+                        <TextField variant='standard' label="Location Name" placeholder="Empire State Building" fullWidth className="col-span-2" />
+                        <TextField variant='standard' label="Address" placeholder="20 W 34th St, New York, NY 10001" fullWidth className="col-span-2" />
+                      </div>
+                    ) : (
+                      <div
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition-colors"
+                        onClick={() => document.getElementById('media-upload')?.click()}
+                      >
+                        <input
+                          id="media-upload"
+                          type="file"
+                          accept={
+                            formData.type === 'IMAGE' ? 'image/*' :
+                              formData.type === 'VIDEO' ? 'video/*' :
+                                '*/*'
+                          }
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleMediaUpload(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        {mediaPreview ? (
+                          <div>
+                            {formData.type === 'IMAGE' && (
+                              <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                            )}
+                            {formData.type === 'VIDEO' && (
+                              <video src={mediaPreview} className="max-h-48 mx-auto rounded-lg" controls />
+                            )}
+                            {formData.type === 'FILE' && (
+                              <div className="flex items-center justify-center gap-2">
+                                <FileIcon className="text-4xl text-gray-400" />
+                                <div>
+                                  <p className="font-medium">{selectedMedia?.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {(selectedMedia?.size || 0) / 1024} KB
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <Button size="small" className="mt-2" onClick={() => {
+                              setSelectedMedia(null);
+                              setMediaPreview('');
+                            }}>
+                              Change File
+                            </Button>
+                          </div>
+                        ) : (
+                          <div>
+                            <UploadIcon className="text-4xl text-gray-400 mb-2" />
+                            <p className="text-gray-600">Click to upload {formData.type.toLowerCase()}</p>
+                            <p className="text-sm text-gray-400 mt-1">
+                              {formData.type === 'IMAGE' && 'JPG, PNG, GIF up to 5MB'}
+                              {formData.type === 'VIDEO' && 'MP4, MOV up to 16MB'}
+                              {formData.type === 'FILE' && 'PDF, DOC, XLS up to 10MB'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Carousel Builder */}
+                {formData.type === 'CAROUSEL' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Typography variant="subtitle1">Carousel Cards</Typography>
+                      <Button startIcon={<AddIcon />} onClick={addCarouselCard} size="small">
+                        Add Card
+                      </Button>
+                    </div>
+                    {carouselCards.map((card, idx) => (
+                      <Card key={card.id} className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <Typography variant="subtitle2">Card {idx + 1}</Typography>
+                          <IconButton size="small" onClick={() => removeCarouselCard(card.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </div>
+                        <div className="space-y-3">
+                          <div
+                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer"
+                            onClick={() => document.getElementById(`carousel-media-${card.id}`)?.click()}
+                          >
+                            <input
+                              id={`carousel-media-${card.id}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleCarouselCardMedia(card.id, e.target.files[0]);
+                                }
+                              }}
+                            />
+                            {card.media_url ? (
+                              <img src={card.media_url} alt="Preview" className="max-h-32 mx-auto rounded" />
+                            ) : (
+                              <div>
+                                <ImageIcon className="text-2xl text-gray-400" />
+                                <p className="text-sm text-gray-500">Upload image</p>
+                              </div>
+                            )}
+                          </div>
+                          <TextField
+                            variant='standard'
+                            size="small"
+                            label="Card Title"
+                            value={card.title}
+                            onChange={(e) => updateCarouselCard(card.id, 'title', e.target.value)}
+                            fullWidth
+                          />
+                          <TextField
+                            variant='standard'
+                            size="small"
+                            label="Card Description"
+                            value={card.description}
+                            onChange={(e) => updateCarouselCard(card.id, 'description', e.target.value)}
+                            multiline
+                            rows={2}
+                            fullWidth
+                          />
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <Typography variant="caption">Buttons</Typography>
+                              <Button size="small" onClick={() => addCarouselCardButton(card.id)} startIcon={<AddIcon />}>
+                                Add Button
+                              </Button>
+                            </div>
+                            {card.buttons.map((btn, btnIdx) => (
+                              <div key={btnIdx} className="flex gap-2 mb-2">
+                                <Select
+                                  size="small"
+                                  value={btn.type}
+                                  onChange={(e) => updateCarouselCardButton(card.id, btnIdx, 'type', e.target.value)}
+                                  className="w-32"
+                                >
+                                  <MenuItem value="URL">URL</MenuItem>
+                                  <MenuItem value="Phone Number">Phone</MenuItem>
+                                </Select>
+                                <TextField
+                                  variant='standard'
+                                  size="small"
+                                  placeholder="Button Title"
+                                  value={btn.button_title}
+                                  onChange={(e) => updateCarouselCardButton(card.id, btnIdx, 'button_title', e.target.value)}
+                                  className="flex-1"
+                                />
+                                <TextField
+                                  variant='standard'
+                                  size="small"
+                                  placeholder={btn.type === 'URL' ? 'https://...' : '+1234567890'}
+                                  value={btn.button_value}
+                                  onChange={(e) => updateCarouselCardButton(card.id, btnIdx, 'button_value', e.target.value)}
+                                  className="flex-1"
+                                />
+                                <IconButton size="small" onClick={() => removeCarouselCardButton(card.id, btnIdx)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Order Details Builder */}
+                {formData.type === 'ORDER_DETAILS' && (
+                  <div className="space-y-4">
+                    <TextField
+                      label="Order ID"
+                      value={formData.order_details?.order_id}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        order_details: { ...prev.order_details!, order_id: e.target.value }
+                      }))}
+                      fullWidth
+                    />
+
+                    <div className="flex justify-between items-center">
+                      <Typography variant="subtitle1">Order Items</Typography>
+                      <Button startIcon={<AddIcon />} onClick={addOrderItem} size="small">
+                        Add Item
+                      </Button>
+                    </div>
+
+                    {formData.order_details?.items.map((item, idx) => (
+                      <Card key={idx} className="p-3">
+                        <div className="flex gap-2">
+                          <div className="flex-1 space-y-2">
+                            <TextField
+                              variant='standard'
+                              size="small"
+                              label="Item Name"
+                              value={item.name}
+                              onChange={(e) => updateOrderItem(idx, 'name', e.target.value)}
+                              fullWidth
+                            />
+                            <div className="flex gap-2">
+                              <TextField
+                                variant='standard'
+                                size="small"
+                                label="Quantity"
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateOrderItem(idx, 'quantity', parseInt(e.target.value))}
+                                className="w-24"
+                              />
+                              <TextField
+                                variant='standard'
+                                size="small"
+                                label="Price"
+                                type="number"
+                                value={item.price}
+                                onChange={(e) => updateOrderItem(idx, 'price', parseFloat(e.target.value))}
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                          <IconButton size="small" onClick={() => removeOrderItem(idx)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </div>
+                      </Card>
+                    ))}
+
+                    <div className="flex gap-2">
+                      <TextField
+                        variant='standard'
+                        label="Currency"
+                        value={formData.order_details?.currency}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          order_details: { ...prev.order_details!, currency: e.target.value }
+                        }))}
+                        className="w-24"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Interactive Elements */}
+                <FormControl fullWidth>
+                  <InputLabel>Interactive Action Type</InputLabel>
+                  <Select
+                    variant='standard'
+                    value={formData.message_action_type}
+                    onChange={(e) => setFormData(prev => ({ ...prev, message_action_type: e.target.value as any }))}
+                    label="Interactive Action Type"
+                  >
+                    <MenuItem value="None">None</MenuItem>
+                    <MenuItem value="CTA">Call to Action (Buttons)</MenuItem>
+                    <MenuItem value="QuickReplies">Quick Replies</MenuItem>
+                    <MenuItem value="All">Both</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {(formData.message_action_type === 'CTA' || formData.message_action_type === 'All') && (
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <Typography variant="subtitle1">Call to Action Buttons</Typography>
+                      <Button size="small" startIcon={<AddIcon />} onClick={addCTAButton}>
+                        Add Button
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {formData.call_to_action?.map((btn, idx) => (
+                        <Card key={idx} className="p-3">
+                          <div className="flex gap-2">
+                            <FormControl size="small" className="flex-1">
+                              <InputLabel>Type</InputLabel>
+                              <Select
+                                variant='standard'
+                                value={btn.type}
+                                onChange={(e) => updateCTAButton(idx, 'type', e.target.value)}
+                                label="Type"
+                              >
+                                <MenuItem value="URL">URL</MenuItem>
+                                <MenuItem value="Phone Number">Phone Number</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <TextField
+                              variant='standard'
+                              size="small"
+                              label="Button Title"
+                              value={btn.button_title}
+                              onChange={(e) => updateCTAButton(idx, 'button_title', e.target.value)}
+                              className="flex-1"
+                            />
+                            <TextField
+                              variant='standard'
+                              size="small"
+                              label={btn.type === 'URL' ? 'URL' : 'Phone Number'}
+                              value={btn.button_value}
+                              onChange={(e) => updateCTAButton(idx, 'button_value', e.target.value)}
+                              className="flex-1"
+                              placeholder={btn.type === 'URL' ? 'https://example.com' : '+1234567890'}
+                            />
+                            <IconButton color="error" onClick={() => removeCTAButton(idx)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(formData.message_action_type === 'QuickReplies' || formData.message_action_type === 'All') && (
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <Typography variant="subtitle1">Quick Replies</Typography>
+                      <Button size="small" startIcon={<AddIcon />} onClick={addQuickReply}>
+                        Add Reply
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {formData.quick_replies?.map((reply, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label={`Quick Reply ${idx + 1}`}
+                            value={reply}
+                            onChange={(e) => updateQuickReply(idx, e.target.value)}
+                            placeholder="e.g., Yes, No, Maybe"
+                            variant='standard'
+                          />
+                          <IconButton color="error" onClick={() => removeQuickReply(idx)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step 4: Preview & Submit */}
+            {activeStep === 3 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4"
+              >
+                <Alert severity="info" className="mb-4">
+                  Your template will be submitted for review. Approval typically takes 24-48 hours.
+                </Alert>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <Typography variant="subtitle2" className="mb-2">Template Summary</Typography>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Name:</strong> {formData.name}</p>
+                    <p><strong>Label:</strong> {formData.label}</p>
+                    <p><strong>Category:</strong> {formData.category}</p>
+                    <p><strong>Type:</strong> {formData.type}</p>
+                    <p><strong>Language:</strong> {formData.language}</p>
+                    <p><strong>Parameters:</strong> {parameters.length}</p>
+                    <p><strong>Interactive Type:</strong> {formData.message_action_type}</p>
+                    {formData.type === 'CAROUSEL' && <p><strong>Carousel Cards:</strong> {carouselCards.length}</p>}
+                    {formData.type === 'ORDER_DETAILS' && (
+                      <p><strong>Order Items:</strong> {formData.order_details?.items.length || 0}</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8">
+              <Button
+                disabled={activeStep === 0}
+                onClick={() => setActiveStep(prev => prev - 1)}
+              >
+                Back
+              </Button>
+              {activeStep < steps.length - 1 ? (
+                <Button
+                  variant="contained"
+                  onClick={() => setActiveStep(prev => prev + 1)}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  className="!bg-green-600 hover:!bg-green-700"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  startIcon={submitting ? <CircularProgress size={20} /> : <WhatsAppIcon />}
+                >
+                  Submit Template
+                </Button>
+              )}
+            </div>
+          </Paper>
+        </div>
+
+        {/* Preview Section */}
+        {showPreview && (
+          <div className="w-1/3 border-l border-gray-200 bg-gray-50 overflow-y-auto p-6 sticky top-[73px]">
+            {renderWhatsAppPreview()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
