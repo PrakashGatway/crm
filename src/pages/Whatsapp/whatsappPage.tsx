@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GroupIcon, ListIcon, SettingsIcon } from 'lucide-react';
+import { FileSpreadsheet, GroupIcon, ListIcon, SettingsIcon } from 'lucide-react';
 import WhatsAppTemplateEditor from '../Setting/whatsappTemplate';
 import WhatsAppTemplateList from './Templates';
+import WhatsAppBroadcast from './whatsappBroadcast';
 
 type TabType = 'statuses' | 'leads' | 'emailEditor' | 'settings';
 
 export default function WhatsappPage() {
-    const [activeTab, setActiveTab] = useState<TabType>('whatsapp');
+    const [activeTab, setActiveTab] = useState<TabType>('broadcast');
 
     const getTabLabel = (tab: TabType) => {
         const labels: Record<TabType, string> = {
             statuses: 'Statuses',
             leads: 'Leads',
             teams: 'Teams',
+            broadcast: 'Broadcast',
             settings: 'Settings',
             emailEditor: 'Email Templates',
             whatsapp: 'Create Template',
@@ -29,6 +31,7 @@ export default function WhatsappPage() {
             settings: <SettingsIcon fontSize="small" />,
             emailEditor: <SettingsIcon fontSize="small" />,
             whatsapp: <SettingsIcon fontSize="small" />,
+            broadcast: <FileSpreadsheet fontSize="small" />
         };
         return icons[tab];
     };
@@ -38,7 +41,7 @@ export default function WhatsappPage() {
             {/* ─── Animated Tabs with Framer Motion ─── */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
                 <div className="relative flex gap-1">
-                    {(["whatsapp", "templates"] as TabType[]).map((tab) => (
+                    {(["broadcast", "whatsapp", "templates"] as TabType[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -66,10 +69,13 @@ export default function WhatsappPage() {
 
             {/* ─── Tab Content with AnimatePresence ─── */}
             <AnimatePresence mode="wait">
+                {activeTab === 'broadcast' && (
+                    <WhatsAppBroadcast />
+                )}
                 {activeTab === 'whatsapp' && (
                     <WhatsAppTemplateEditor />
                 )}
-                 {activeTab === 'templates' && (
+                {activeTab === 'templates' && (
                     <WhatsAppTemplateList />
                 )}
 

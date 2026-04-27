@@ -2,25 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Video, Mail, Phone, UserPlus, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import api from './axiosInstance';
 
-const JoinMeetingPage = ({ meetingId }) => {
+const JoinMeetingPage = () => {
   const [meetingData, setMeetingData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const meetingId = window.location.pathname.split('/').pop(); // Extract meeting ID from URL
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     company: ''
   });
-  
+
   const [joinWindow, setJoinWindow] = useState({
     canJoin: false,
     status: 'loading', // 'loading' | 'upcoming' | 'available' | 'ended' | 'expired'
     message: '',
     timeRemaining: null
   });
-  
+
   const [isJoining, setIsJoining] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -29,17 +30,16 @@ const JoinMeetingPage = ({ meetingId }) => {
     const fetchMeeting = async () => {
       try {
         setLoading(true);
-        // Replace with your actual API endpoint
         const response = await api.get(`/leads/meeting/activity/${meetingId}`);
         const result = response.data
-        
+
         if (!result.success || !result.data?.[0]) {
           throw new Error('Meeting not found');
         }
-        
+
         const meeting = result.data[0];
         setMeetingData(meeting);
-        
+
         // Pre-fill form with lead data if available
         if (meeting.lead) {
           setFormData({
@@ -49,7 +49,7 @@ const JoinMeetingPage = ({ meetingId }) => {
             company: ''
           });
         }
-        
+
       } catch (err) {
         setError(err.message);
         console.error('Failed to fetch meeting:', err);
@@ -71,18 +71,18 @@ const JoinMeetingPage = ({ meetingId }) => {
       const now = new Date();
       const scheduledAt = new Date(meetingData.meetingDetails.scheduledAt);
       const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
-      
+
       const timeDiff = now - scheduledAt;
       const absDiff = Math.abs(timeDiff);
-      
+
       // Calculate remaining time for display
       let timeRemaining = null;
       if (timeDiff < -windowMs) {
         const untilStart = scheduledAt - now;
         const mins = Math.ceil(untilStart / 60000);
-        timeRemaining = mins > 60 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${mins}m`;
+        timeRemaining = mins > 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
       }
-      
+
       // Determine join status based on 5-minute window
       if (absDiff <= windowMs) {
         // ✅ Within 5 min before OR after scheduled time
@@ -148,7 +148,7 @@ const JoinMeetingPage = ({ meetingId }) => {
   const handleJoinMeeting = async (e) => {
     e.preventDefault();
     if (!validateForm() || !joinWindow.canJoin) return;
-    
+
     setIsJoining(true);
     try {
       // Register attendee with backend
@@ -164,13 +164,13 @@ const JoinMeetingPage = ({ meetingId }) => {
           }
         })
       });
-      
+
       const result = await response.json();
       if (!result.success) throw new Error(result.message || 'Failed to register');
-      
+
       // Redirect to actual meeting link
       window.open(meetingData.meetingDetails.link, '_blank', 'noopener,noreferrer');
-      
+
     } catch (err) {
       setError(err.message);
       alert('Failed to join meeting. Please try again.');
@@ -199,7 +199,7 @@ const JoinMeetingPage = ({ meetingId }) => {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load meeting</h3>
           <p className="text-gray-500 mb-6">{error || 'Meeting not found or has been removed.'}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
@@ -211,9 +211,6 @@ const JoinMeetingPage = ({ meetingId }) => {
   }
 
   const { date: formattedDate, time: formattedTime } = formatDateTime(meetingData.meetingDetails.scheduledAt);
-  const conductedBy = meetingData.performedBy; // Could be expanded with user details from API
-
-  // 🎨 Status Badge Component
   const getStatusBadge = () => {
     const styles = {
       available: 'bg-green-100 text-green-800 border-green-200',
@@ -227,13 +224,13 @@ const JoinMeetingPage = ({ meetingId }) => {
       ended: <Clock className="w-3 h-3 mr-1" />,
       expired: <AlertCircle className="w-3 h-3 mr-1" />
     };
-    
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${styles[joinWindow.status]}`}>
         {icons[joinWindow.status]}
-        {joinWindow.status === 'available' ? 'Join Available' : 
-         joinWindow.status === 'upcoming' ? 'Upcoming' : 
-         joinWindow.status === 'expired' ? 'Expired' : 'Ended'}
+        {joinWindow.status === 'available' ? 'Join Available' :
+          joinWindow.status === 'upcoming' ? 'Upcoming' :
+            joinWindow.status === 'expired' ? 'Expired' : 'Ended'}
       </span>
     );
   };
@@ -241,16 +238,12 @@ const JoinMeetingPage = ({ meetingId }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Video className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">CRM Meeting</h1>
-                <p className="text-sm text-gray-500">Secure video conferencing</p>
+              <div className="w-38 h-full">
+                <img src="https://www.gatewayabroadeducations.com/images/logo.svg" alt="" />
               </div>
             </div>
             {getStatusBadge()}
@@ -259,14 +252,12 @@ const JoinMeetingPage = ({ meetingId }) => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-3 gap-6">
-          
-          {/* Left Column - Meeting Details */}
-          <div className="lg:col-span-1 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        <div className="grid lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-1 space-y-6 h-full">
             {/* Meeting Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
+            <div className="bg-white rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-800 to-blue-500 px-6 py-3">
                 <h2 className="text-lg font-semibold text-white mb-1">{meetingData.title}</h2>
                 <p className="text-blue-100 text-sm line-clamp-2">{meetingData.description}</p>
               </div>
@@ -282,8 +273,14 @@ const JoinMeetingPage = ({ meetingId }) => {
                       <Calendar className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium text-gray-900">{formattedDate}</p>
-                        <p className="text-sm text-gray-500">{formattedTime}</p>
-                      </div>
+                        <p className="text-sm text-gray-500">
+                          {meetingData?.meetingDetails?.scheduledAt
+                            ? new Date(meetingData.meetingDetails.scheduledAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                            : "N/A"}
+                        </p>     </div>
                     </div>
                     {joinWindow.status === 'upcoming' && joinWindow.timeRemaining && (
                       <div className="flex items-center space-x-2 text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
@@ -306,7 +303,7 @@ const JoinMeetingPage = ({ meetingId }) => {
                 {meetingData.lead && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 block">
-                      Registered Lead
+                      Registered User
                     </label>
                     <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -322,30 +319,12 @@ const JoinMeetingPage = ({ meetingId }) => {
               </div>
             </div>
 
-            {/* Meeting Link Preview */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 block">
-                Meeting Platform
-              </label>
-              <a 
-                href={meetingData.meetingDetails.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition group"
-              >
-                <Video className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition" />
-                <span className="text-sm text-gray-700 truncate flex-1">
-                  {meetingData.meetingDetails.link.replace('https://', '')}
-                </span>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition" />
-              </a>
-            </div>
           </div>
 
           {/* Right Column - Join Form / Status */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
-              
+          <div className="lg:col-span-2 h-full">
+            <div className="bg-white rounded-2xl p-6 lg:p-8 h-full">
+
               {/* ✅ Can Join - Show Form */}
               {joinWindow.canJoin ? (
                 <>
@@ -372,9 +351,8 @@ const JoinMeetingPage = ({ meetingId }) => {
                             name="fullName"
                             value={formData.fullName}
                             onChange={handleInputChange}
-                            className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
-                              errors.fullName ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                            }`}
+                            className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${errors.fullName ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                              }`}
                             placeholder="John Doe"
                           />
                         </div>
@@ -392,9 +370,8 @@ const JoinMeetingPage = ({ meetingId }) => {
                             name="email"
                             value={formData.email}
                             onChange={handleInputChange}
-                            className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
-                              errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                            }`}
+                            className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                              }`}
                             placeholder="john@company.com"
                           />
                         </div>
@@ -472,23 +449,20 @@ const JoinMeetingPage = ({ meetingId }) => {
                   </form>
                 </>
               ) : (
-                /* ❌ Cannot Join - Show Status Message */
-                <div className="text-center py-12">
-                  {/* Dynamic Icon based on status */}
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                    joinWindow.status === 'upcoming' ? 'bg-yellow-100' : 'bg-gray-100'
-                  }`}>
+                <div className="text-center py-6">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${joinWindow.status === 'upcoming' ? 'bg-gray-100' : 'bg-gray-100'
+                    }`}>
                     {joinWindow.status === 'upcoming' ? (
-                      <Clock className="w-10 h-10 text-yellow-600" />
+                      <Clock className="w-12 stroke-[1.4px] h-12 text-yellow-600" />
                     ) : (
-                      <AlertCircle className="w-10 h-10 text-gray-400" />
+                      <AlertCircle className="w-12 h-12 stroke-[1.4px] text-gray-400" />
                     )}
                   </div>
-                  
+
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">
                     {joinWindow.status === 'upcoming' ? 'Meeting hasn\'t started yet' : 'Joining is no longer available'}
                   </h3>
-                  
+
                   <p className="text-gray-500 max-w-md mx-auto mb-6">
                     {joinWindow.message}
                     {joinWindow.status === 'upcoming' && (
@@ -499,8 +473,7 @@ const JoinMeetingPage = ({ meetingId }) => {
                       </>
                     )}
                   </p>
-                  
-                  {/* Countdown or CTA */}
+
                   {joinWindow.status === 'upcoming' && joinWindow.timeRemaining && (
                     <div className="inline-flex items-center bg-blue-50 border border-blue-200 rounded-lg px-5 py-3 mb-6">
                       <Clock className="w-5 h-5 text-blue-600 mr-2" />
@@ -509,12 +482,11 @@ const JoinMeetingPage = ({ meetingId }) => {
                       </span>
                     </div>
                   )}
-                  
-                  {/* Refresh Button for upcoming meetings */}
+
                   {joinWindow.status === 'upcoming' && (
                     <button
                       onClick={() => window.location.reload()}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm block mx-auto border p-2  text-blue-600 hover:text-blue-700 font-medium"
                     >
                       Refresh page to check status
                     </button>
@@ -529,7 +501,7 @@ const JoinMeetingPage = ({ meetingId }) => {
       {/* Footer */}
       <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="text-center text-sm text-gray-500">
-          <p>© 2026 CRM Platform. All rights reserved.</p>
+          <p>© 2026 Gateway Abroad. All rights reserved.</p>
         </div>
       </footer>
     </div>
