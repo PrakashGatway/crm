@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Video, Mail, Phone, UserPlus, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import api from './axiosInstance';
+import { useNavigate } from 'react-router';
 
 const JoinMeetingPage = () => {
   const [meetingData, setMeetingData] = useState(null);
@@ -24,6 +25,7 @@ const JoinMeetingPage = () => {
 
   const [isJoining, setIsJoining] = useState(false);
   const [errors, setErrors] = useState({});
+      const navigate = useNavigate();
 
   // 🔄 Fetch meeting data from API
   useEffect(() => {
@@ -147,33 +149,40 @@ const JoinMeetingPage = () => {
 
   const handleJoinMeeting = async (e) => {
     e.preventDefault();
+
     if (!validateForm() || !joinWindow.canJoin) return;
 
     setIsJoining(true);
+
     try {
-      // Register attendee with backend
-      const response = await api.get(`/meetings/${meetingId}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await api.post(
+        `/leads/meetings/${meetingId}/register`,
+        {
           attendee: {
             fullName: formData.fullName,
             email: formData.email,
             phone: formData.phone,
-            company: formData.company
-          }
-        })
-      });
+            company: formData.company,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || 'Failed to register');
+      const result = response.data;
 
-      // Redirect to actual meeting link
-      window.open(meetingData.meetingDetails.link, '_blank', 'noopener,noreferrer');
+      if (!result.success) {
+        throw new Error(result.message || "Failed to register");
+      }
+
+ window.location.replace(meetingData.meetingDetails.link);
 
     } catch (err) {
-      setError(err.message);
-      alert('Failed to join meeting. Please try again.');
+      setError(err?.response?.data?.message || err.message);
+      alert("Failed to join meeting. Please try again.");
     } finally {
       setIsJoining(false);
     }

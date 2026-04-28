@@ -8,7 +8,7 @@ import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
 import { toast } from "react-toastify";
 import api from "../../axiosInstance";
-import { Activity, ArrowRight, Eye, Filter, Pencil, Phone, PhoneCall, PhoneCallIcon, PhoneIncomingIcon, PhoneMissed, PhoneMissedIcon, PhoneOutgoingIcon, Target, Trash2, Upload, User, X } from "lucide-react";
+import { Activity, ArrowRight, Eye, Filter, Pencil, Phone, PhoneCall, PhoneCallIcon, PhoneIncomingIcon, PhoneMissed, PhoneMissedIcon, PhoneOutgoingIcon, SendIcon, Target, Trash2, Upload, User, X } from "lucide-react";
 // import TextArea from "../../components/form/input/TextArea";
 import { useAuth } from "../../context/UserContext";
 import ExcelUpload from "./ExcelUpload";
@@ -19,6 +19,7 @@ import IncomingCallsModal from "./IncomingCall";
 import { useNavigate, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import LeadDetailPage from "../LeadDetails";
+import SendMessageModal from "./SendMessage";
 
 // const LeadStatuses = [
 //     'new',
@@ -101,6 +102,8 @@ export default function LeadManagement() {
   const [showExcelUpload, setShowExcelUpload] = useState(false);
   const { LeadStatus } = useAuth() as any;
   const navigate = useNavigate();
+  const [showMessageModal, setShowMessageModal] = useState(false);
+
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
@@ -117,8 +120,8 @@ export default function LeadManagement() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (filters.search.length === 0 || filters.search.length >= 3) {
-        setDebouncedSearch(filters.search);
+      if (filters.search?.length === 0 || filters?.search?.length >= 3) {
+        setDebouncedSearch(filters?.search);
       }
     }, 500);
     return () => clearTimeout(timer);
@@ -767,7 +770,7 @@ export default function LeadManagement() {
   };
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto relative">
       <div className="p-2 px-3 border border-gray-200 rounded-2xl dark:border-gray-800 mb-2 bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col items-center w-full gap-4 md:flex-row">
@@ -963,47 +966,58 @@ export default function LeadManagement() {
                   Reset Filters
                 </button>
                 {selectedLeads.size > 0 && (
-                  <div className="flex items-center gap-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 ps-2 sticky top-0 z-10">
-                    <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                      {selectedLeads.size} lead{selectedLeads.size > 1 ? "s" : ""}
-                    </span>
+                  <div className="absolute top-0 left-0 right-0 z-10">
+                    <div className="flex items-center gap-2 rounded-lg p-3 border-2 border-red-600 bg-indigo-50 dark:bg-indigo-900/20 ps-2 sticky top-0 z-10">
+                      <span className="text- font-medium text-indigo-800 dark:text-indigo-200">
+                        {selectedLeads.size} lead{selectedLeads.size > 1 ? "s" : ""}
+                      </span>
 
-                    {/* Counselor Select */}
-                    <select
-                      value={bulkCounselor}
-                      onChange={(e) => setBulkCounselor(e.target.value)}
-                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600"
-                    >
-                      <option value="">Assign Counselor</option>
-                      {allCounselors.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name || c.email}
-                        </option>
-                      ))}
-                    </select>
+                      {/* Counselor Select */}
+                      <select
+                        value={bulkCounselor}
+                        onChange={(e) => setBulkCounselor(e.target.value)}
+                        className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm dark:bg-gray-800 dark:border-gray-600"
+                      >
+                        <option value="">Assign Counselor</option>
+                        {allCounselors.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name || c.email}
+                          </option>
+                        ))}
+                      </select>
 
-                    <button
-                      onClick={() => handleBulkAssign(false)}
-                      disabled={!bulkCounselor || bulkAssignLoading}
-                      className="rounded bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                      Assign
-                    </button>
-                    <button
-                      onClick={() => handleBulkAssign(true)}
-                      disabled={!bulkCounselor || bulkAssignLoading}
-                      className="rounded bg-violet-900 px-3 h-[85%] text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                      Assign<span className="block text-[8px] m-0 p-0">
-                        (With New)</span>
-                    </button>
+                      <button
+                        onClick={() => handleBulkAssign(false)}
+                        disabled={!bulkCounselor || bulkAssignLoading}
+                        className="rounded bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        Assign
+                      </button>
+                      <button
+                        onClick={() => handleBulkAssign(true)}
+                        disabled={!bulkCounselor || bulkAssignLoading}
+                        className="rounded bg-violet-900 py-2 px-3 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        Assign<span className="m-0 p-0">
+                          (New)</span>
+                      </button>
+<button
+            onClick={() => setShowMessageModal(true)}
+            className="rounded bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700"
+        >
+            <SendIcon className="h-4 w-4 inline mr-1" />
+            Send Message
+        </button>
 
-                    <button
-                      onClick={handleBulkDelete}
-                      className="rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
+
+
+                      <button
+                        onClick={handleBulkDelete}
+                        className="rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1019,6 +1033,16 @@ export default function LeadManagement() {
 
             </div>
           </div>
+
+          <SendMessageModal
+            isOpen={showMessageModal}
+            onClose={() => setShowMessageModal(false)}
+            selectedLeads={Array.from(selectedLeads)}
+            onComplete={(results) => {
+              console.log('Messages sent:', results);
+              fetchLeads();
+            }}
+          />
 
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             {loading ? (
@@ -1218,18 +1242,18 @@ export default function LeadManagement() {
           </div>
           {total > 0 && (
             <div className="mt-4 flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
-              
-                <select
-                  name="limit"
-                  value={filters.limit}
-                  onChange={handleFilterChange}
-                  className="rounded-md border border-gray-300 bg-white py-1 px-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                >
-                  <option value="5">5</option>
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                </select>
+
+              <select
+                name="limit"
+                value={filters.limit}
+                onChange={handleFilterChange}
+                className="rounded-md border border-gray-300 bg-white py-1 px-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
               <div className="text-sm text-gray-500 dark:text-gray-300">
                 Showing <span className="font-medium">{(filters.page - 1) * filters.limit + 1}</span> to{" "}
                 <span className="font-medium">{Math.min(filters.page * filters.limit, total)}</span> of{" "}

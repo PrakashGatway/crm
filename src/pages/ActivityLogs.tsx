@@ -683,28 +683,79 @@ const ActivityLogsContent = ({
 
                                                             {/* Meeting Details */}
                                                             {activity?.type === "meeting" && (
-                                                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                                                                    {activity?.meetingDetails?.link && (
-                                                                        <>
-                                                                            <span className="text-gray-500 dark:text-gray-400">Link:</span>
-                                                                            <a
-                                                                                href={activity.meetingDetails.link}
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                className="font-medium text-blue-600 hover:underline dark:text-blue-400"
-                                                                            >
-                                                                                Join Meeting
-                                                                            </a>
-                                                                        </>
-                                                                    )}
-                                                                    {activity?.meetingDetails?.scheduledAt && (
-                                                                        <>
-                                                                            <span className="text-gray-500 dark:text-gray-400 ml-0 md:ml-4">Scheduled:</span>
-                                                                            <span className="font-medium text-gray-800 dark:text-white">
-                                                                                {moment(activity.meetingDetails.scheduledAt).format("MMM DD, hh:mm A")}
-                                                                            </span>
-                                                                        </>
-                                                                    )}
+                                                                <div className="mt-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                                                                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-2">
+
+                                                                        {/* Link */}
+                                                                        {activity?.meetingDetails?.link && (
+                                                                            <>
+                                                                                <span className="text-gray-500 dark:text-gray-400">Link:</span>
+                                                                                <a
+                                                                                    href={activity.meetingDetails.link}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                                                                >
+                                                                                    Join Meeting
+                                                                                </a>
+                                                                            </>
+                                                                        )}
+
+                                                                        {/* Scheduled */}
+                                                                        {activity?.meetingDetails?.scheduledAt && (
+                                                                            <>
+                                                                                <span className="text-gray-500 dark:text-gray-400">Scheduled:</span>
+                                                                                <span className="font-medium text-gray-800 dark:text-white">
+                                                                                    {moment(activity.meetingDetails.scheduledAt).format("MMM DD, hh:mm A")}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+
+                                                                        {/* Status */}
+                                                                        {activity?.meetingDetails?.status && (
+                                                                            <>
+                                                                                <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                                                                                <span
+                                                                                    className={`font-medium ${activity.meetingDetails.status === "joined"
+                                                                                            ? "text-green-600"
+                                                                                            : "text-yellow-600"
+                                                                                        }`}
+                                                                                >
+                                                                                    {activity.meetingDetails.status}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+
+                                                                        {/* Joined By */}
+                                                                        {activity?.meetingDetails?.joinedBy && (
+                                                                            <>
+                                                                                <span className="text-gray-500 dark:text-gray-400">Joined By:</span>
+                                                                                <span className="font-medium text-gray-800 dark:text-white">
+                                                                                    {activity.meetingDetails.joinedBy}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+
+                                                                        {/* Joined At */}
+                                                                        {activity?.meetingDetails?.joinedAt && (
+                                                                            <>
+                                                                                <span className="text-gray-500 dark:text-gray-400">Joined At:</span>
+                                                                                <span className="font-medium text-gray-800 dark:text-white">
+                                                                                    {moment(activity.meetingDetails.joinedAt).format("MMM DD, hh:mm A")}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+
+                                                                        {/* Phone */}
+                                                                        {activity?.meetingDetails?.phone && (
+                                                                            <>
+                                                                                <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                                                                                <span className="font-medium text-gray-800 dark:text-white">
+                                                                                    {activity.meetingDetails.phone}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             )}
 

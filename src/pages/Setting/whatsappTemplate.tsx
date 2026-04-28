@@ -210,26 +210,10 @@ export default function WhatsAppTemplateEditor() {
     setFormData(prev => ({ ...prev, sample_text: sample }));
   }, [formData.text, parameters, previewValues]);
 
-const handleMediaUpload = async (file: File) => {
-  setSelectedMedia(file); // ✅ ADD THIS
-
-//   const formData = new FormData();
-//   formData.append("file", file);
-
-//   const res = await api.post("/upload/single", formData, {
-//   headers: {
-//     "Content-Type": "multipart/form-data",
-//   },
-// });
-// console.log("Upload response:", res.data);
-//   const url = res.data?.url;
-
-  setMediaPreview("https://gratisography.com/wp-content/uploads/2025/05/gratisography-moon-robot-800x525.jpg");
-
-  setFormData(prev => ({
-    ...prev,
-    header_media: "",
-  }));
+const handleMediaUpload = (file: File) => {
+  setSelectedMedia(file);
+  const localUrl = URL.createObjectURL(file);
+  setMediaPreview(localUrl);
 };
 
   const handleCarouselCardMedia = (cardId: string, file: File) => {

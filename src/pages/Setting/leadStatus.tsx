@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TextField,
@@ -49,6 +49,7 @@ import EmailTemplatesList from './TemplateList';
 import TeamManagement from '../Team';
 import { GroupIcon } from 'lucide-react';
 import WhatsAppTemplateEditor from './whatsappTemplate';
+import { useAuth } from '../../context/UserContext';
 
 interface LeadStatus {
   _id?: string;
@@ -78,6 +79,7 @@ export default function LeadStatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<OrderBy>('order');
+  const {user} = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -267,14 +269,6 @@ export default function LeadStatusPage() {
       .slice(0, 2);
   };
 
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      'bg-yellow-500', 'bg-pink-500', 'bg-blue-500', 'bg-green-500',
-      'bg-purple-500', 'bg-indigo-500', 'bg-orange-500', 'bg-red-500',
-    ];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
-  };
 
   const getTabLabel = (tab: TabType) => {
     const labels: Record<TabType, string> = {
@@ -309,7 +303,7 @@ export default function LeadStatusPage() {
       {/* ─── Animated Tabs with Framer Motion ─── */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
         <div className="relative flex gap-1">
-          {(['statuses', "emailEditor", "teams"] as TabType[]).map((tab) => (
+          {(user.role === 'admin'  ? ['statuses', "emailEditor", "teams"] : ['statuses']).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

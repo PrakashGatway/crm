@@ -176,7 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         api.get('/auth/me')
       ]);
       // const response = await api.get('/auth/me');
-      const statusValues =formatLeadStatus(leadstatus?.data?.data)
+      const statusValues = formatLeadStatus(leadstatus?.data?.data)
       setStatus(statusValues);
       setUser(response.data?.data);
     } catch (err) {

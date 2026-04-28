@@ -8,7 +8,6 @@ import {
   Users,
   Rocket,
   User,
-  ChevronDown,
   Shield,
   Settings,
   MailIcon,
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 
 const getIcon = (name: string, size = 22) => {
-  const props = { size:24, color:"#5e2525", strokeWidth: 1.5 };
+  const props = { size: 24, color: "#5e2525", strokeWidth: 1.5 };
   switch (name) {
     case "Dashboard": return <LayoutDashboard {...props} />;
     case "Daily Reports":
@@ -55,10 +54,16 @@ const navItemsUser: NavItem[] = [{ name: "Dashboard", path: "/" }];
 
 const navItemsCoun: NavItem[] = [{ name: "Dashboard", path: "/" },
 { name: "Leads", path: "/leads" },];
+
+
 const navItemsMan: NavItem[] = [
   { name: "Dashboard", path: "/" },
   { name: "Call Reports", path: "/lead-report" },
   { name: "Leads", path: "/leads" },
+  { name: "Emails", path: "/broadcast" },
+  { name: "Whatsapp", path: "/whatsapp" },
+  { name: "Setting", path: "/setting" }
+
 ];
 const navItemsTeacher: NavItem[] = [{ name: "Dashboard", path: "/" }];
 
