@@ -487,219 +487,250 @@ const handleMediaUpload = (file: File) => {
   };
 
   // Render preview based on template type
-  const renderWhatsAppPreview = () => {
-    const renderMediaPreview = () => {
-      if (formData.type === 'IMAGE' && mediaPreview) {
-        return (
-          <div className="mb-2 rounded-lg overflow-hidden">
-            <img src={mediaPreview} alt="Preview" className="w-full h-48 object-cover" />
-          </div>
-        );
-      }
-      if (formData.type === 'VIDEO' && mediaPreview) {
-        return (
-          <div className="mb-2 rounded-lg overflow-hidden relative">
-            <video
-              ref={videoRef}
-              src={mediaPreview}
-              className="w-full h-48 object-cover"
-              onClick={() => {
-                if (videoRef.current) {
-                  if (isPlaying) {
-                    videoRef.current.pause();
-                  } else {
-                    videoRef.current.play();
-                  }
-                  setIsPlaying(!isPlaying);
-                }
-              }}
-            />
-            <button
-              className="absolute bottom-2 right-2 bg-black/50 rounded-full p-1"
-              onClick={() => {
-                if (videoRef.current) {
-                  if (isPlaying) {
-                    videoRef.current.pause();
-                  } else {
-                    videoRef.current.play();
-                  }
-                  setIsPlaying(!isPlaying);
-                }
-              }}
-            >
-              {isPlaying ? <PauseIcon className="text-white text-sm" /> : <PlayIcon className="text-white text-sm" />}
-            </button>
-          </div>
-        );
-      }
-      if (formData.type === 'FILE' && selectedMedia) {
-        return (
-          <div className="mb-2 bg-gray-100 rounded-lg p-3 flex items-center gap-2">
-            <FileIcon className="text-gray-600" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">{selectedMedia.name}</p>
-              <p className="text-xs text-gray-500">{(selectedMedia.size / 1024).toFixed(2)} KB</p>
-            </div>
-          </div>
-        );
-      }
-      if (formData.type === 'LOCATION') {
-        return (
-          <div className="mb-2 bg-blue-100 rounded-lg p-3 flex items-center gap-2">
-            <LocationIcon className="text-blue-600" />
-            <div>
-              <p className="text-sm font-medium">📍 Location Shared</p>
-              <p className="text-xs text-gray-600">123 Business St, City, Country</p>
-            </div>
-          </div>
-        );
-      }
-      return null;
-    };
-
-    const renderCarouselPreview = () => {
-      if (formData.type !== 'CAROUSEL' || carouselCards.length === 0) return null;
-
+const renderWhatsAppPreview = () => {
+  const renderMediaPreview = () => {
+    if (formData.type === 'IMAGE' && mediaPreview) {
       return (
-        <div className="mb-2 overflow-x-auto flex gap-3 pb-2">
-          {carouselCards.map((card, idx) => (
-            <div key={card.id} className="min-w-[200px] bg-white rounded-lg border border-gray-200 overflow-hidden">
-              {card.media_url && (
-                <img src={card.media_url} alt={card.title} className="w-full h-32 object-cover" />
-              )}
-              <div className="p-2">
-                <p className="font-semibold text-sm">{card.title}</p>
-                <p className="text-xs text-gray-600 mt-1">{card.description}</p>
-                {card.buttons.map((btn, btnIdx) => (
-                  <div key={btnIdx} className="mt-2 bg-green-50 rounded text-center py-1">
-                    <span className="text-xs text-green-700">{btn.button_title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2">
+          <img 
+            src={mediaPreview} 
+            alt="Preview" 
+            className="w-full max-h-[280px] object-cover" 
+          />
         </div>
       );
-    };
+    }
 
-    const renderOrderDetailsPreview = () => {
-      if (formData.type !== 'ORDER_DETAILS' || !formData.order_details) return null;
-
-      const total = formData.order_details.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
+    if (formData.type === 'VIDEO' && mediaPreview) {
       return (
-        <div className="mb-2 bg-white rounded-lg border border-gray-200 p-3">
-          <div className="flex justify-between items-center mb-2 pb-2 border-b">
-            <p className="font-semibold text-sm">Order #{formData.order_details.order_id}</p>
-            <p className="text-xs text-gray-500">{formData.order_details.currency}</p>
-          </div>
-          {formData.order_details.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center mb-2 text-sm">
-              <div className="flex-1">
-                <p className="font-medium">{item.name}</p>
-                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-              </div>
-              <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
-            </div>
-          ))}
-          <div className="mt-2 pt-2 border-t flex justify-between">
-            <p className="font-semibold">Total</p>
-            <p className="font-semibold">${total.toFixed(2)}</p>
+        <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2 relative">
+          <video
+            ref={videoRef}
+            src={mediaPreview}
+            className="w-full max-h-[280px] object-cover"
+            onClick={() => {
+              if (videoRef.current) {
+                isPlaying ? videoRef.current.pause() : videoRef.current.play();
+                setIsPlaying(!isPlaying);
+              }
+            }}
+          />
+          <button
+            className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/70 transition-colors rounded-full p-2.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                isPlaying ? videoRef.current.pause() : videoRef.current.play();
+                setIsPlaying(!isPlaying);
+              }
+            }}
+          >
+            {isPlaying ? (
+              <PauseIcon className="text-white w-5 h-5" />
+            ) : (
+              <PlayIcon className="text-white w-5 h-5" />
+            )}
+          </button>
+        </div>
+      );
+    }
+
+    if (formData.type === 'FILE' && selectedMedia) {
+      return (
+        <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
+          <FileIcon className="text-gray-600 w-8 h-8 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{selectedMedia.name}</p>
+            <p className="text-xs text-gray-500">
+              {(selectedMedia.size / 1024).toFixed(1)} KB
+            </p>
           </div>
         </div>
       );
-    };
+    }
 
-    const renderMessageWithParameters = () => {
-      let message = formData.sample_text || formData.text;
-      return message;
-    };
+    if (formData.type === 'LOCATION') {
+      return (
+        <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <LocationIcon className="text-blue-600 w-6 h-6" />
+          </div>
+          <div>
+            <p className="font-medium text-sm">📍 Shared Location</p>
+            <p className="text-xs text-gray-600">123 Business St, City, Country</p>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderCarouselPreview = () => {
+    if (formData.type !== 'CAROUSEL' || carouselCards.length === 0) return null;
 
     return (
-      <div className="bg-gray-100 rounded-2xl max-w-md mx-auto shadow-xl">
-        {/* Header */}
-        <div className="bg-green-600 rounded-t-2xl p-3 flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-            <WhatsAppIcon className="text-green-600" />
-          </div>
-          <div className="flex-1">
-            <div className="text-white font-semibold">WhatsApp</div>
-          </div>
-        </div>
+      <div className="mb-3 -mx-1 overflow-x-auto flex gap-3 pb-3 snap-x snap-mandatory scrollbar-hide">
+        {carouselCards.map((card, idx) => (
+          <div 
+            key={card.id} 
+            className="min-w-[220px] bg-white rounded-3xl border border-gray-200 overflow-hidden snap-start shadow-sm"
+          >
+            {card.media_url && (
+              <div className="h-52 overflow-hidden">
+                <img 
+                  src={card.media_url} 
+                  alt={card.title} 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+            )}
+            <div className="p-3">
+              <p className="font-semibold text-base leading-tight">{card.title}</p>
+              <p className="text-sm text-gray-600 mt-1.5 line-clamp-2">{card.description}</p>
 
-        {/* Chat Area */}
-        <div className="bg-[#efeae2] min-h-[380px] rounded-b-2xl p-4">
-          <div className="flex justify-start mb-4">
-            <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-none p-3 shadow-sm">
-              {/* Header Type Label */}
-              {formData.type !== 'TEXT' && (
-                <div className="mb-2 pb-2 border-b border-gray-200 flex items-center gap-1">
-                  {formData.type === 'IMAGE' && <ImageIcon className="text-green-600 text-sm" />}
-                  {formData.type === 'VIDEO' && <VideoIcon className="text-green-600 text-sm" />}
-                  {formData.type === 'FILE' && <FileIcon className="text-green-600 text-sm" />}
-                  {formData.type === 'LOCATION' && <LocationIcon className="text-green-600 text-sm" />}
-                  {formData.type === 'CAROUSEL' && <CarouselIcon className="text-green-600 text-sm" />}
-                  {formData.type === 'ORDER_DETAILS' && <OrderIcon className="text-green-600 text-sm" />}
-                  <span className="text-xs font-medium text-green-600">{formData.type}</span>
+              {card.buttons.map((btn, btnIdx) => (
+                <div 
+                  key={btnIdx} 
+                  className="mt-3 border border-green-600 text-green-600 rounded-full py-2 text-center text-sm font-medium hover:bg-green-50 transition-colors"
+                >
+                  {btn.button_title}
                 </div>
-              )}
-
-              {/* Header Text */}
-              {formData.header_text && (
-                <div className="mb-2 pb-2 border-b border-gray-200">
-                  <p className="text-sm font-semibold text-gray-800">{formData.header_text}</p>
-                </div>
-              )}
-
-              {/* Media/Content Preview */}
-              {renderMediaPreview()}
-              {renderCarouselPreview()}
-              {renderOrderDetailsPreview()}
-
-              {/* Body Text */}
-              <p className="text-gray-800 text-sm whitespace-pre-wrap">
-                {renderMessageWithParameters()}
-              </p>
-
-              {/* Footer */}
-              {formData.footer_text && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <p className="text-xs text-gray-500">{formData.footer_text}</p>
-                </div>
-              )}
-
-              {/* Interactive Buttons */}
-              {formData.message_action_type === 'CTA' && formData.call_to_action && formData.call_to_action.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {formData.call_to_action.map((btn, idx) => (
-                    <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-2 text-center hover:bg-green-100 transition-colors cursor-pointer">
-                      {btn.type === 'Phone Number' ? (
-                        <PhoneIcon className="text-green-600 text-sm mr-1" />
-                      ) : (
-                        <LinkIcon className="text-green-600 text-sm mr-1" />
-                      )}
-                      <span className="text-green-700 text-sm font-medium">{btn.button_title}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Quick Replies */}
-              {formData.message_action_type === 'QuickReplies' && formData.quick_replies && formData.quick_replies.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {formData.quick_replies.map((reply, idx) => (
-                    <div key={idx} className="bg-gray-100 rounded-full px-3 py-1 hover:bg-gray-200 transition-colors cursor-pointer">
-                      <span className="text-xs text-gray-700">{reply}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
           </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderOrderDetailsPreview = () => {
+    if (formData.type !== 'ORDER_DETAILS' || !formData.order_details) return null;
+
+    const total = formData.order_details.items.reduce(
+      (sum, item) => sum + item.price * item.quantity, 
+      0
+    );
+
+    return (
+      <div className="bg-white rounded-3xl p-4 border border-gray-100 mb-3">
+        <div className="flex justify-between items-center mb-3 pb-2 border-b">
+          <p className="font-semibold">Order #{formData.order_details.order_id}</p>
+          <p className="text-sm text-gray-500">{formData.order_details.currency}</p>
+        </div>
+
+        {formData.order_details.items.map((item, idx) => (
+          <div key={idx} className="flex justify-between py-2 text-sm">
+            <div>
+              <p className="font-medium">{item.name}</p>
+              <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
+            </div>
+            <p className="font-medium tabular-nums">
+              ${(item.price * item.quantity).toFixed(2)}
+            </p>
+          </div>
+        ))}
+
+        <div className="border-t mt-2 pt-3 flex justify-between font-semibold">
+          <p>Total</p>
+          <p>${total.toFixed(2)}</p>
         </div>
       </div>
     );
   };
+
+  return (
+    <div className="bg-gray-100 rounded-3xl max-w-md mx-auto shadow-2xl overflow-hidden">
+
+
+      {/* Chat Background */}
+      <div className="bg-[#e5ddd5] min-h-[420px] p-4 relative">
+        {/* Subtle background pattern (optional) */}
+        <div className="absolute inset-0 bg-[radial-gradient(#c8b9a8_0.8px,transparent_1px)] bg-[length:20px_20px] opacity-30 pointer-events-none" />
+
+        <div className="flex justify-start">
+          {/* Message Bubble - Received style */}
+          <div 
+            className={`
+              max-w-[85%] bg-white rounded-3xl px-4 py-3 shadow-sm
+              ${formData.type === 'IMAGE' || formData.type === 'VIDEO' ? 'p-1' : ''}
+            `}
+          >
+            {/* Type Label (for non-text) */}
+            {formData.type !== 'TEXT' && (
+              <div className="flex items-center gap-1.5 mb-2 px-1 text-green-600 text-xs font-medium">
+                {formData.type === 'IMAGE' && <ImageIcon className="w-4 h-4" />}
+                {formData.type === 'VIDEO' && <VideoIcon className="w-4 h-4" />}
+                {formData.type === 'FILE' && <FileIcon className="w-4 h-4" />}
+                {formData.type === 'LOCATION' && <LocationIcon className="w-4 h-4" />}
+                {formData.type === 'CAROUSEL' && <CarouselIcon className="w-4 h-4" />}
+                {formData.type === 'ORDER_DETAILS' && <OrderIcon className="w-4 h-4" />}
+                <span>{formData.type.replace('_', ' ')}</span>
+              </div>
+            )}
+
+            {/* Header Text */}
+            {formData.header_text && (
+              <div className="mb-2 font-semibold text-gray-900 px-1">
+                {formData.header_text}
+              </div>
+            )}
+
+            {/* Media / Content */}
+            {renderMediaPreview()}
+            {renderCarouselPreview()}
+            {renderOrderDetailsPreview()}
+
+            {/* Body Text */}
+            <div className="text-[15px] leading-[1.35] text-gray-800 whitespace-pre-wrap px-1">
+              {formData.sample_text || formData.text || "Message preview..."}
+            </div>
+
+            {/* Footer */}
+            {formData.footer_text && (
+              <div className="mt-2 text-xs text-gray-500 px-1">
+                {formData.footer_text}
+              </div>
+            )}
+
+            {/* CTA Buttons */}
+            {formData.message_action_type === 'CTA' && formData.call_to_action?.length > 0 && (
+              <div className="mt-3 space-y-2 px-1">
+                {formData.call_to_action.map((btn, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#dcf8c6] hover:bg-[#d3f0bd] border border-[#c3e8a8] text-[#0b7a3f] rounded-2xl py-2.5 text-center text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    {btn.button_title}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Quick Replies */}
+            {formData.message_action_type === 'QuickReplies' && formData.quick_replies?.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2 px-1">
+                {formData.quick_replies.map((reply, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-white border border-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    {reply}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Timestamp */}
+            <div className="text-right mt-1">
+              <span className="text-[10px] text-gray-400">12:34</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   const steps = ['Template Details', 'Message Content', 'Media & Interactive', 'Preview & Submit'];
 

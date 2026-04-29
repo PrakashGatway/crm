@@ -1,5 +1,5 @@
 // components/WhatsAppMarketing/WhatsAppBroadcast.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import {
     TextField,
     Button,
@@ -75,6 +75,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import api from '../../axiosInstance';
 import { SearchIcon } from 'lucide-react';
+import { useAuth } from '../../context/UserContext';
 
 const broadcastStatuses = {
     draft: { label: 'Draft', color: 'default' },
@@ -113,6 +114,7 @@ export default function WhatsAppBroadcast() {
     const [templateVariables, setTemplateVariables] = useState({});
     const [cronExpression, setCronExpression] = useState('');
     const [recurringPattern, setRecurringPattern] = useState('once');
+    const { user } = useAuth();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -964,9 +966,9 @@ export default function WhatsAppBroadcast() {
                                             }}
                                             label="WhatsApp Template *"
                                         >
-                                            {templates.map(template => (
+                                            {[...templates.filter(template => template.status === 'APPROVED')].map(template => (
                                                 <MenuItem key={template._id} value={template.name}>
-                                                    {template.name} - {template.language}
+                                                    {template.name} - {template.language} - {template?.status}
                                                 </MenuItem>
                                             ))}
                                         </Select>
@@ -1019,7 +1021,6 @@ export default function WhatsAppBroadcast() {
                                 t => t.name === formData.templateId
                             );
 
-                            // ✅ safety check
                             if (!selectedTemplate) return null;
 
                             const isMediaTemplate = selectedTemplate.type != "TEXT";
@@ -1153,7 +1154,7 @@ export default function WhatsAppBroadcast() {
                             </FormControl>
                         </div>
 
-                        <div className="md:col-span-2">
+                        {user.role === "admin" && <div className="md:col-span-2">
                             <FormControl fullWidth>
                                 <InputLabel>Lead Sources</InputLabel>
                                 <Select
@@ -1172,7 +1173,7 @@ export default function WhatsAppBroadcast() {
                                     ))}
                                 </Select>
                             </FormControl>
-                        </div>
+                        </div>}
 
                         <div className="md:col-span-2">
                             <FormControl fullWidth>
