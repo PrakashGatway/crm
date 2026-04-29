@@ -457,7 +457,7 @@ const handleMediaUpload = (file: File) => {
       }, 500);
     } catch (error: any) {
       console.error('Error submitting template:', error);
-      toast.error(error.response?.data?.message || 'Failed to submit template');
+      toast.error(error?.error?.message || error.message  || 'Failed to submit template');
     } finally {
       setSubmitting(false);
     }

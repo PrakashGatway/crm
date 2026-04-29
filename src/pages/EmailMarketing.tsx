@@ -70,6 +70,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import api from '../axiosInstance';
 import { SearchIcon } from 'lucide-react';
+import { useAuth } from '../context/UserContext';
 
 const broadcastStatuses = {
     draft: { label: 'Draft', color: 'default' },
@@ -98,6 +99,7 @@ export default function EmailBroadcast() {
     const [leadStatuses, setLeadStatuses] = useState([]);
     const [leadSources, setLeadSources] = useState([]);
     const [users, setUsers] = useState([]);
+    const { user } = useAuth();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -594,15 +596,15 @@ export default function EmailBroadcast() {
                                                             </Tooltip>
                                                         </>
                                                     )}
-                                                        <Tooltip title="Delete">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDelete(broadcast._id)}
-                                                                className="!text-red-600"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                    <Tooltip title="Delete">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleDelete(broadcast._id)}
+                                                            className="!text-red-600"
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
                                                     <Tooltip title="View Details">
                                                         <IconButton
                                                             size="small"
@@ -696,7 +698,7 @@ export default function EmailBroadcast() {
                             </FormControl>
                         </div>
 
-                        <div className="md:col-span-2">
+                        {user.role && user.role === "admin" && <div className="md:col-span-2">
                             <FormControl fullWidth>
                                 <InputLabel>Lead Sources</InputLabel>
                                 <Select multiple value={formData.filters.sources} onChange={handleSourceFilterChange} label="Lead Sources"
@@ -710,16 +712,23 @@ export default function EmailBroadcast() {
                                     ))}
                                 </Select>
                             </FormControl>
-                        </div>
+                        </div>}
 
                         <div className="md:col-span-2">
                             <FormControl fullWidth>
                                 <InputLabel>Assigned Counselor</InputLabel>
-                                <Select name="filters.assignedCounselor" value={formData.filters.assignedCounselor}
-                                    onChange={(e) => handleFilterChange('assignedCounselor', e.target.value)} label="Assigned Counselor">
+                                <Select
+                                    name="filters.assignedCounselor"
+                                    value={formData.filters.assignedCounselor || ""}
+                                    onChange={(e) => handleFilterChange('assignedCounselor', e.target.value)}
+                                    label="Assigned Counselor"
+                                >
                                     <MenuItem value="">All Counselors</MenuItem>
-                                    {users.map(user => (
-                                        <MenuItem key={user._id} value={user._id}>{user.name || user.email}</MenuItem>
+
+                                    {users.map((user) => (
+                                        <MenuItem key={user._id} value={user._id}>
+                                            {user.name || user.email}
+                                        </MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
