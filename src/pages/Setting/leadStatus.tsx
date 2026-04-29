@@ -71,7 +71,7 @@ export default function LeadStatusPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('statuses');
+  const [activeTab, setActiveTab] = useState<TabType>('emailEditor');
 
   // Table state
   const [page, setPage] = useState(0);
@@ -303,7 +303,7 @@ export default function LeadStatusPage() {
       {/* ─── Animated Tabs with Framer Motion ─── */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
         <div className="relative flex gap-1">
-          {(user.role === 'admin'  ? ['statuses', "emailEditor", "teams"] : ['statuses']).map((tab) => (
+          {(user.role === 'admin'  ? ['statuses', "emailEditor", "teams"] : ['emailEditor']).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
