@@ -66,9 +66,24 @@ const CallAnalytics = () => {
       ]);
 
       setStatusWise(statusResponse.data?.data || []);
-      const data = response.data.data || [];
+      const data = response?.data?.data || [];
       setAnalytics(data);
       setCounselors(response.data.counselors || []);
+
+      if(data.length === 0) {
+        setSummary({
+          totalCalls: 0,
+          totalOutbound: 0,
+          totalInbound: 0,
+          totalConnected: 0,
+          totalMissed: 0,
+          avgDuration: 0,
+          totalCounselors: 0,
+          connectionRate: 0,
+          avgOutboundDuration: 0,
+          avgInboundDuration: 0
+        });
+      }
 
       if (data.length > 0) {
         const totalCalls = data.reduce((sum, item) => sum + (item.totalCalls || 0), 0);

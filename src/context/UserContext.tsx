@@ -62,8 +62,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (!allowedRoles.includes(user.role)) return;
 
-    console.log(getCookie("auth_token"))
-
     const socket = io("https://server.gatewayabroadeducations.com/lead-notifications", {
       withCredentials: true,
       auth: {
@@ -73,6 +71,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     socket.on("connect", () => {
       console.log("Lead socket connected");
+    });
+
+    socket.on("connect_error", (err) => {
+      console.log("❌ Socket error:", err.message);
     });
 
     socket.on("leadAssigned", (lead) => {
