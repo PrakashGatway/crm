@@ -798,7 +798,7 @@ export default function LeadManagement() {
               <PhoneIncomingIcon className="h-4 w-4" />
               Incoming Calls
             </button>
-            {user.role == "admin" && <>
+            {(user.role == "admin" || user.role == "leader") && <>
               <button
                 onClick={openCreateModal}
                 className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
@@ -818,14 +818,15 @@ export default function LeadManagement() {
                 </svg>
                 Add New Lead
               </button>
-              <button
+
+            </>}
+                      {user.role == "admin" &&    <button
                 onClick={() => setShowExcelUpload(true)}
                 className="flex w-full items-center justify-center gap-2 rounded-full border border-indigo-600 bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-theme-xs hover:bg-indigo-700 hover:text-white lg:inline-flex lg:w-auto"
               >
                 <Upload className="h-4 w-4" />
                 Upload Excel
-              </button>
-            </>}
+              </button>}
 
           </div>
         </div>
@@ -1774,7 +1775,7 @@ function CreateLeadForm({ editModalOpen, setEditModalOpen, LeadStatus, selectedL
               >
                 <div className="flex-1">
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <Label>Full Name *</Label>
                         <Input
