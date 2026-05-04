@@ -31,7 +31,8 @@ import {
     Tag,
     User2,
     Pen,
-    PenIcon
+    PenIcon,
+    MessageCircleCode
 } from "lucide-react";
 import {
     IconButton,
@@ -58,12 +59,12 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import ActivityLogs from "./ActivityLogs";
 import { useAuth } from "../context/UserContext";
+import WhatsAppChat from "./Whatsapp/WsChating";
 
 
 const tabs = [
     { id: "activity", label: "Activity History", icon: Activity },
-    // { id: "details", label: "Lead Details", icon: User },
-    { id: "tasks", label: "Tasks", icon: CheckSquare },
+    { id: "tasks", label: "Chats", icon: MessageCircleCode },
     { id: "documents", label: "Documents", icon: FileText }
 ];
 
@@ -73,8 +74,6 @@ const LeadDetailPage = ({ selectedLead, closeModal, isOpen, clickToCall, setEdit
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("activity");
     const [lead, setLead] = useState(null);
-    // const [activities, setActivities] = useState([]);
-    const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
     // const [activityFilter, setActivityFilter] = useState("all");
@@ -364,7 +363,7 @@ const LeadDetailPage = ({ selectedLead, closeModal, isOpen, clickToCall, setEdit
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 p-6">
+                <div className="flex-1">
                     <AnimatePresence mode="wait">
                         {/* Activity History Tab */}
                         {activeTab === "activity" && (
@@ -374,7 +373,7 @@ const LeadDetailPage = ({ selectedLead, closeModal, isOpen, clickToCall, setEdit
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="space-y-6 w-full overflow-y-auto"
+                                className="space-y-6 w-full overflow-y-auto p-4"
                             >
                                 <ActivityLogs
                                     leadId={lead._id}
@@ -389,52 +388,17 @@ const LeadDetailPage = ({ selectedLead, closeModal, isOpen, clickToCall, setEdit
                         {activeTab === "tasks" && (
                             <motion.div
                                 key="tasks"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                                className="space-y-4"
+                                style={{ height: "calc(100vh - 130px)" }}
+                                className=""
                             >
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tasks</h3>
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<Plus className="h-4 w-4" />}
-                                        sx={{ bgcolor: "indigo.600", "&:hover": { bgcolor: "indigo.700" }, borderRadius: 2, textTransform: "none" }}
-                                    >
-                                        Add Task
-                                    </Button>
-                                </div>
-
-                                {tasks.map((task, index) => (
-                                    <motion.div
-                                        key={task._id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:shadow-md transition-shadow"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <Checkbox
-                                                checked={task.status === "completed"}
-                                                color="primary"
-                                            />
-                                            <div>
-                                                <h4 className={`font-semibold text-gray-900 dark:text-white ${task.status === "completed" ? "line-through text-gray-400" : ""}`}>
-                                                    {task.title}
-                                                </h4>
-                                                <p className="text-sm text-gray-500">
-                                                    Due: {moment(task.dueDate).format("MMM D, YYYY h:mm A")} • Assigned to: {task.assignedTo}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Chip
-                                            label={task.priority}
-                                            color={task.priority === "High" ? "error" : task.priority === "Medium" ? "warning" : "default"}
-                                            size="small"
-                                        />
-                                    </motion.div>
-                                ))}
+                                <WhatsAppChat
+                                    lead={lead}
+                                    onClose={() => setActiveTab("activity")}
+                                    onNewMessage={(message) => {
+                                        // Optional: Handle new message notifications
+                                        console.log("New message:", message);
+                                    }}
+                                />
                             </motion.div>
                         )}
                         {activeTab === "documents" && (
@@ -797,7 +761,7 @@ function MeetingForm({ lead, onClose, refreshLead, editData }: any) {
                                 Scheduling...
                             </>
                         ) : (
-                            editData? "Update Meeting": "Schedule Meeting" 
+                            editData ? "Update Meeting" : "Schedule Meeting"
                         )}
                     </button>
                     <button

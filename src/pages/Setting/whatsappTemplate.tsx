@@ -210,11 +210,11 @@ export default function WhatsAppTemplateEditor() {
     setFormData(prev => ({ ...prev, sample_text: sample }));
   }, [formData.text, parameters, previewValues]);
 
-const handleMediaUpload = (file: File) => {
-  setSelectedMedia(file);
-  const localUrl = URL.createObjectURL(file);
-  setMediaPreview(localUrl);
-};
+  const handleMediaUpload = (file: File) => {
+    setSelectedMedia(file);
+    const localUrl = URL.createObjectURL(file);
+    setMediaPreview(localUrl);
+  };
 
   const handleCarouselCardMedia = (cardId: string, file: File) => {
     const reader = new FileReader();
@@ -457,7 +457,7 @@ const handleMediaUpload = (file: File) => {
       }, 500);
     } catch (error: any) {
       console.error('Error submitting template:', error);
-      toast.error(error?.error?.message || error.message  || 'Failed to submit template');
+      toast.error(error?.error?.message || error.message || 'Failed to submit template');
     } finally {
       setSubmitting(false);
     }
@@ -487,250 +487,250 @@ const handleMediaUpload = (file: File) => {
   };
 
   // Render preview based on template type
-const renderWhatsAppPreview = () => {
-  const renderMediaPreview = () => {
-    if (formData.type === 'IMAGE' && mediaPreview) {
-      return (
-        <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2">
-          <img 
-            src={mediaPreview} 
-            alt="Preview" 
-            className="w-full max-h-[280px] object-cover" 
-          />
-        </div>
-      );
-    }
-
-    if (formData.type === 'VIDEO' && mediaPreview) {
-      return (
-        <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2 relative">
-          <video
-            ref={videoRef}
-            src={mediaPreview}
-            className="w-full max-h-[280px] object-cover"
-            onClick={() => {
-              if (videoRef.current) {
-                isPlaying ? videoRef.current.pause() : videoRef.current.play();
-                setIsPlaying(!isPlaying);
-              }
-            }}
-          />
-          <button
-            className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/70 transition-colors rounded-full p-2.5"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (videoRef.current) {
-                isPlaying ? videoRef.current.pause() : videoRef.current.play();
-                setIsPlaying(!isPlaying);
-              }
-            }}
-          >
-            {isPlaying ? (
-              <PauseIcon className="text-white w-5 h-5" />
-            ) : (
-              <PlayIcon className="text-white w-5 h-5" />
-            )}
-          </button>
-        </div>
-      );
-    }
-
-    if (formData.type === 'FILE' && selectedMedia) {
-      return (
-        <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
-          <FileIcon className="text-gray-600 w-8 h-8 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{selectedMedia.name}</p>
-            <p className="text-xs text-gray-500">
-              {(selectedMedia.size / 1024).toFixed(1)} KB
-            </p>
+  const renderWhatsAppPreview = () => {
+    const renderMediaPreview = () => {
+      if (formData.type === 'IMAGE' && mediaPreview) {
+        return (
+          <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2">
+            <img
+              src={mediaPreview}
+              alt="Preview"
+              className="w-full max-h-[280px] object-cover"
+            />
           </div>
-        </div>
-      );
-    }
+        );
+      }
 
-    if (formData.type === 'LOCATION') {
-      return (
-        <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <LocationIcon className="text-blue-600 w-6 h-6" />
+      if (formData.type === 'VIDEO' && mediaPreview) {
+        return (
+          <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2 relative">
+            <video
+              ref={videoRef}
+              src={mediaPreview}
+              className="w-full max-h-[280px] object-cover"
+              onClick={() => {
+                if (videoRef.current) {
+                  isPlaying ? videoRef.current.pause() : videoRef.current.play();
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+            />
+            <button
+              className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/70 transition-colors rounded-full p-2.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (videoRef.current) {
+                  isPlaying ? videoRef.current.pause() : videoRef.current.play();
+                  setIsPlaying(!isPlaying);
+                }
+              }}
+            >
+              {isPlaying ? (
+                <PauseIcon className="text-white w-5 h-5" />
+              ) : (
+                <PlayIcon className="text-white w-5 h-5" />
+              )}
+            </button>
           </div>
-          <div>
-            <p className="font-medium text-sm">📍 Shared Location</p>
-            <p className="text-xs text-gray-600">123 Business St, City, Country</p>
-          </div>
-        </div>
-      );
-    }
+        );
+      }
 
-    return null;
-  };
-
-  const renderCarouselPreview = () => {
-    if (formData.type !== 'CAROUSEL' || carouselCards.length === 0) return null;
-
-    return (
-      <div className="mb-3 -mx-1 overflow-x-auto flex gap-3 pb-3 snap-x snap-mandatory scrollbar-hide">
-        {carouselCards.map((card, idx) => (
-          <div 
-            key={card.id} 
-            className="min-w-[220px] bg-white rounded-3xl border border-gray-200 overflow-hidden snap-start shadow-sm"
-          >
-            {card.media_url && (
-              <div className="h-52 overflow-hidden">
-                <img 
-                  src={card.media_url} 
-                  alt={card.title} 
-                  className="w-full h-full object-cover" 
-                />
-              </div>
-            )}
-            <div className="p-3">
-              <p className="font-semibold text-base leading-tight">{card.title}</p>
-              <p className="text-sm text-gray-600 mt-1.5 line-clamp-2">{card.description}</p>
-
-              {card.buttons.map((btn, btnIdx) => (
-                <div 
-                  key={btnIdx} 
-                  className="mt-3 border border-green-600 text-green-600 rounded-full py-2 text-center text-sm font-medium hover:bg-green-50 transition-colors"
-                >
-                  {btn.button_title}
-                </div>
-              ))}
+      if (formData.type === 'FILE' && selectedMedia) {
+        return (
+          <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
+            <FileIcon className="text-gray-600 w-8 h-8 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{selectedMedia.name}</p>
+              <p className="text-xs text-gray-500">
+                {(selectedMedia.size / 1024).toFixed(1)} KB
+              </p>
             </div>
           </div>
-        ))}
-      </div>
-    );
-  };
+        );
+      }
 
-  const renderOrderDetailsPreview = () => {
-    if (formData.type !== 'ORDER_DETAILS' || !formData.order_details) return null;
-
-    const total = formData.order_details.items.reduce(
-      (sum, item) => sum + item.price * item.quantity, 
-      0
-    );
-
-    return (
-      <div className="bg-white rounded-3xl p-4 border border-gray-100 mb-3">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b">
-          <p className="font-semibold">Order #{formData.order_details.order_id}</p>
-          <p className="text-sm text-gray-500">{formData.order_details.currency}</p>
-        </div>
-
-        {formData.order_details.items.map((item, idx) => (
-          <div key={idx} className="flex justify-between py-2 text-sm">
+      if (formData.type === 'LOCATION') {
+        return (
+          <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <LocationIcon className="text-blue-600 w-6 h-6" />
+            </div>
             <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
+              <p className="font-medium text-sm">📍 Shared Location</p>
+              <p className="text-xs text-gray-600">123 Business St, City, Country</p>
             </div>
-            <p className="font-medium tabular-nums">
-              ${(item.price * item.quantity).toFixed(2)}
-            </p>
           </div>
-        ))}
+        );
+      }
 
-        <div className="border-t mt-2 pt-3 flex justify-between font-semibold">
-          <p>Total</p>
-          <p>${total.toFixed(2)}</p>
-        </div>
-      </div>
-    );
-  };
+      return null;
+    };
 
-  return (
-    <div className="bg-gray-100 rounded-3xl max-w-md mx-auto shadow-2xl overflow-hidden">
+    const renderCarouselPreview = () => {
+      if (formData.type !== 'CAROUSEL' || carouselCards.length === 0) return null;
 
+      return (
+        <div className="mb-3 -mx-1 overflow-x-auto flex gap-3 pb-3 snap-x snap-mandatory scrollbar-hide">
+          {carouselCards.map((card, idx) => (
+            <div
+              key={card.id}
+              className="min-w-[220px] bg-white rounded-3xl border border-gray-200 overflow-hidden snap-start shadow-sm"
+            >
+              {card.media_url && (
+                <div className="h-52 overflow-hidden">
+                  <img
+                    src={card.media_url}
+                    alt={card.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className="p-3">
+                <p className="font-semibold text-base leading-tight">{card.title}</p>
+                <p className="text-sm text-gray-600 mt-1.5 line-clamp-2">{card.description}</p>
 
-      {/* Chat Background */}
-      <div className="bg-[#e5ddd5] min-h-[420px] p-4 relative">
-        {/* Subtle background pattern (optional) */}
-        <div className="absolute inset-0 bg-[radial-gradient(#c8b9a8_0.8px,transparent_1px)] bg-[length:20px_20px] opacity-30 pointer-events-none" />
-
-        <div className="flex justify-start">
-          {/* Message Bubble - Received style */}
-          <div 
-            className={`
-              max-w-[85%] bg-white rounded-3xl px-4 py-3 shadow-sm
-              ${formData.type === 'IMAGE' || formData.type === 'VIDEO' ? 'p-1' : ''}
-            `}
-          >
-            {/* Type Label (for non-text) */}
-            {formData.type !== 'TEXT' && (
-              <div className="flex items-center gap-1.5 mb-2 px-1 text-green-600 text-xs font-medium">
-                {formData.type === 'IMAGE' && <ImageIcon className="w-4 h-4" />}
-                {formData.type === 'VIDEO' && <VideoIcon className="w-4 h-4" />}
-                {formData.type === 'FILE' && <FileIcon className="w-4 h-4" />}
-                {formData.type === 'LOCATION' && <LocationIcon className="w-4 h-4" />}
-                {formData.type === 'CAROUSEL' && <CarouselIcon className="w-4 h-4" />}
-                {formData.type === 'ORDER_DETAILS' && <OrderIcon className="w-4 h-4" />}
-                <span>{formData.type.replace('_', ' ')}</span>
-              </div>
-            )}
-
-            {/* Header Text */}
-            {formData.header_text && (
-              <div className="mb-2 font-semibold text-gray-900 px-1">
-                {formData.header_text}
-              </div>
-            )}
-
-            {/* Media / Content */}
-            {renderMediaPreview()}
-            {renderCarouselPreview()}
-            {renderOrderDetailsPreview()}
-
-            {/* Body Text */}
-            <div className="text-[15px] leading-[1.35] text-gray-800 whitespace-pre-wrap px-1">
-              {formData.sample_text || formData.text || "Message preview..."}
-            </div>
-
-            {/* Footer */}
-            {formData.footer_text && (
-              <div className="mt-2 text-xs text-gray-500 px-1">
-                {formData.footer_text}
-              </div>
-            )}
-
-            {/* CTA Buttons */}
-            {formData.message_action_type === 'CTA' && formData.call_to_action?.length > 0 && (
-              <div className="mt-3 space-y-2 px-1">
-                {formData.call_to_action.map((btn, idx) => (
+                {card.buttons.map((btn, btnIdx) => (
                   <div
-                    key={idx}
-                    className="bg-[#dcf8c6] hover:bg-[#d3f0bd] border border-[#c3e8a8] text-[#0b7a3f] rounded-2xl py-2.5 text-center text-sm font-medium transition-colors cursor-pointer"
+                    key={btnIdx}
+                    className="mt-3 border border-green-600 text-green-600 rounded-full py-2 text-center text-sm font-medium hover:bg-green-50 transition-colors"
                   >
                     {btn.button_title}
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+          ))}
+        </div>
+      );
+    };
 
-            {/* Quick Replies */}
-            {formData.message_action_type === 'QuickReplies' && formData.quick_replies?.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2 px-1">
-                {formData.quick_replies.map((reply, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white border border-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
-                  >
-                    {reply}
-                  </div>
-                ))}
+    const renderOrderDetailsPreview = () => {
+      if (formData.type !== 'ORDER_DETAILS' || !formData.order_details) return null;
+
+      const total = formData.order_details.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      return (
+        <div className="bg-white rounded-3xl p-4 border border-gray-100 mb-3">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b">
+            <p className="font-semibold">Order #{formData.order_details.order_id}</p>
+            <p className="text-sm text-gray-500">{formData.order_details.currency}</p>
+          </div>
+
+          {formData.order_details.items.map((item, idx) => (
+            <div key={idx} className="flex justify-between py-2 text-sm">
+              <div>
+                <p className="font-medium">{item.name}</p>
+                <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
               </div>
-            )}
+              <p className="font-medium tabular-nums">
+                ${(item.price * item.quantity).toFixed(2)}
+              </p>
+            </div>
+          ))}
 
-            {/* Timestamp */}
-            <div className="text-right mt-1">
-              <span className="text-[10px] text-gray-400">12:34</span>
+          <div className="border-t mt-2 pt-3 flex justify-between font-semibold">
+            <p>Total</p>
+            <p>${total.toFixed(2)}</p>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="bg-gray-100 rounded-3xl max-w-md mx-auto shadow-2xl overflow-hidden">
+
+
+        {/* Chat Background */}
+        <div className="bg-[#e5ddd5] min-h-[420px] p-4 relative">
+          {/* Subtle background pattern (optional) */}
+          <div className="absolute inset-0 bg-[radial-gradient(#c8b9a8_0.8px,transparent_1px)] bg-[length:20px_20px] opacity-30 pointer-events-none" />
+
+          <div className="flex justify-start">
+            {/* Message Bubble - Received style */}
+            <div
+              className={`
+              max-w-[85%] bg-white rounded-3xl px-4 py-3 shadow-sm
+              ${formData.type === 'IMAGE' || formData.type === 'VIDEO' ? 'p-1' : ''}
+            `}
+            >
+              {/* Type Label (for non-text) */}
+              {formData.type !== 'TEXT' && (
+                <div className="flex items-center gap-1.5 mb-2 px-1 text-green-600 text-xs font-medium">
+                  {formData.type === 'IMAGE' && <ImageIcon className="w-4 h-4" />}
+                  {formData.type === 'VIDEO' && <VideoIcon className="w-4 h-4" />}
+                  {formData.type === 'FILE' && <FileIcon className="w-4 h-4" />}
+                  {formData.type === 'LOCATION' && <LocationIcon className="w-4 h-4" />}
+                  {formData.type === 'CAROUSEL' && <CarouselIcon className="w-4 h-4" />}
+                  {formData.type === 'ORDER_DETAILS' && <OrderIcon className="w-4 h-4" />}
+                  <span>{formData.type.replace('_', ' ')}</span>
+                </div>
+              )}
+
+              {/* Header Text */}
+              {formData.header_text && (
+                <div className="mb-2 font-semibold text-gray-900 px-1">
+                  {formData.header_text}
+                </div>
+              )}
+
+              {/* Media / Content */}
+              {renderMediaPreview()}
+              {renderCarouselPreview()}
+              {renderOrderDetailsPreview()}
+
+              {/* Body Text */}
+              <div className="text-[15px] leading-[1.35] text-gray-800 whitespace-pre-wrap px-1">
+                {formData.sample_text || formData.text || "Message preview..."}
+              </div>
+
+              {/* Footer */}
+              {formData.footer_text && (
+                <div className="mt-2 text-xs text-gray-500 px-1">
+                  {formData.footer_text}
+                </div>
+              )}
+
+              {/* CTA Buttons */}
+              {formData.message_action_type === 'CTA' && formData.call_to_action?.length > 0 && (
+                <div className="mt-3 space-y-2 px-1">
+                  {formData.call_to_action.map((btn, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#dcf8c6] hover:bg-[#d3f0bd] border border-[#c3e8a8] text-[#0b7a3f] rounded-2xl py-2.5 text-center text-sm font-medium transition-colors cursor-pointer"
+                    >
+                      {btn.button_title}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Quick Replies */}
+              {formData.message_action_type === 'QuickReplies' && formData.quick_replies?.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2 px-1">
+                  {formData.quick_replies.map((reply, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white border border-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      {reply}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Timestamp */}
+              <div className="text-right mt-1">
+                <span className="text-[10px] text-gray-400">12:34</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const steps = ['Template Details', 'Message Content', 'Media & Interactive', 'Preview & Submit'];
 
@@ -940,7 +940,6 @@ const renderWhatsAppPreview = () => {
               </motion.div>
             )}
 
-            {/* Step 3: Media & Interactive Elements */}
             {activeStep === 2 && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}

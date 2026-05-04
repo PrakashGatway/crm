@@ -1025,6 +1025,8 @@ export default function WhatsAppBroadcast() {
 
                             const isMediaTemplate = selectedTemplate.type != "TEXT";
 
+                            console.log(selectedTemplate);
+
                             if (!isMediaTemplate) return null;
 
                             return (

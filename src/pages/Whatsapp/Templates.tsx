@@ -168,12 +168,11 @@ export default function WhatsAppTemplateList({
         toast.success('Template ID copied to clipboard');
     };
 
+
     const handleDeleteConfirm = async () => {
         if (selectedTemplate?.id) {
             try {
-                // Call your delete API endpoint
-                console.log('Deleting template with ID:', selectedTemplate.id);
-                await api.delete(`/ws/templates/${selectedTemplate.id}`);
+                await api.delete(`/ws/templates/${selectedTemplate.id}?name=${selectedTemplate.name}&language=${selectedTemplate.language}`);
                 toast.success('Template deleted successfully');
                 setDeleteDialogOpen(false);
                 loadTemplates();
