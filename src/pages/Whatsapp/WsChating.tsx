@@ -39,7 +39,96 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../axiosInstance';
 import { toast } from 'react-toastify';
-// import TemplatePicker from './TemplatePicker';
+import TemplatePicker from './TemplatePicker';
+
+
+const getStatusIcon = (status) => {
+    switch (status) {
+        case 'sent':
+            return <Check className="h-3 w-3 text-gray-400" />;
+        case 'delivered':
+            return <CheckCheck className="h-3 w-3 text-gray-500" />;
+        case 'read':
+            return <CheckCheck className="h-3 w-3 text-blue-500" />;
+        case 'sending':
+            return <Clock className="h-3 w-3 text-gray-400 animate-pulse" />;
+        case 'failed':
+            return <AlertCircle className="h-3 w-3 text-red-500" />;
+        default:
+            return <Check className="h-3 w-3 text-gray-400" />;
+    }
+};
+
+
+const MessageBubble = React.memo(({ message, isOwn, lead }) => {
+    const isTemplate = message.templateName;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className={`flex ${isOwn ? 'justify-start' : 'justify-end'} mb-2`}
+        >
+            {isOwn && (
+                <Avatar
+                    sx={{ width: 32, height: 32, mr: 1, bgcolor: '#25D366' }}
+                    className="flex-shrink-0"
+                >
+                    {lead?.fullName?.charAt(0) || 'A'}
+                </Avatar>
+            )}
+
+            <div className={`max-w-[350px] min-w-none ${isOwn ? 'items-end' : 'items-end'}`}>
+                {isTemplate && (
+                    <div className="text-xs text-gray-500 mb-1 ml-1">
+                        Template: {message.templateName}
+                    </div>
+                )}
+
+                <div
+                    className={`relative px-3 py-2 rounded-2xl ${isOwn
+                        ? 'bg-gray-100 text-gray-900 rounded-tl-none'
+                        : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tr-none border border-gray-200 dark:border-gray-700'
+                        }`}
+                >
+                    {message.mediaUrl && (
+                        <div className="mb-2">
+                            {message.mediaUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                <img
+                                    src={message.mediaUrl}
+                                    alt="Media"
+                                    className="max-w-full rounded-lg max-h-64 object-cover"
+                                />
+                            ) : (
+                                <video
+                                    src={message.mediaUrl}
+                                    controls
+                                    className="max-w-full rounded-lg max-h-64"
+                                />
+                            )}
+                        </div>
+                    )}
+
+                    <div className="whitespace-pre-wrap text-[13px] break-words">
+                        {message.message}
+                    </div>
+
+                    <div className={`flex justify-end font-medium items-right gap-1 mt-1 text-[11px] ${!isOwn ? 'text-gray/80' : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                        <span>{message.formattedTime}</span>
+                        {!isOwn && getStatusIcon(message.status)}
+                    </div>
+                </div>
+
+                {message.error && (
+                    <div className="text-xs text-red-500 mt-1 ml-1">
+                        Failed to send: {message.error}
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+});
 
 const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
     const [messages, setMessages] = useState({});
@@ -188,11 +277,12 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
         scrollToBottom();
 
         try {
-            const response = await api.post(`/whatsapp/chat/${lead._id}/template`, {
+            const response = await api.put(`/ws/template/msg/${lead._id}`, {
                 templateId: template.id,
                 templateName: template.name,
                 parameters: parameters,
-                language: template.language
+                language: template.language,
+                messagePreview: messagePreview
             });
 
             if (response.data.success) {
@@ -203,7 +293,6 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                 toast.error("Failed to send template");
             }
         } catch (error) {
-            console.error("Template error:", error);
             updateMessageStatus(tempMessage._id, { status: 'failed', error: error.message });
             toast.error("Failed to send template");
         } finally {
@@ -244,93 +333,6 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
         setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 500);
-    };
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'sent':
-                return <Check className="h-3 w-3 text-gray-400" />;
-            case 'delivered':
-                return <CheckCheck className="h-3 w-3 text-gray-500" />;
-            case 'read':
-                return <CheckCheck className="h-3 w-3 text-blue-500" />;
-            case 'sending':
-                return <Clock className="h-3 w-3 text-gray-400 animate-pulse" />;
-            case 'failed':
-                return <AlertCircle className="h-3 w-3 text-red-500" />;
-            default:
-                return <Check className="h-3 w-3 text-gray-400" />;
-        }
-    };
-
-    const MessageBubble = ({ message, isOwn }) => {
-        const isTemplate = message.templateName;
-
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                className={`flex ${isOwn ? 'justify-start' : 'justify-end'} mb-2`}
-            >
-                {isOwn && (
-                    <Avatar
-                        sx={{ width: 32, height: 32, mr: 1, bgcolor: '#25D366' }}
-                        className="flex-shrink-0"
-                    >
-                        {lead?.fullName?.charAt(0) || 'A'}
-                    </Avatar>
-                )}
-
-                <div className={`max-w-[350px] min-w-none ${isOwn ? 'items-end' : 'items-end'}`}>
-                    {isTemplate && (
-                        <div className="text-xs text-gray-500 mb-1 ml-1">
-                            Template: {message.templateName}
-                        </div>
-                    )}
-
-                    <div
-                        className={`relative px-3 py-2 rounded-2xl ${isOwn
-                                ? 'bg-gray-100 text-gray-900 rounded-tl-none'
-                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tr-none border border-gray-200 dark:border-gray-700'
-                            }`}
-                    >
-                        {message.mediaUrl && (
-                            <div className="mb-2">
-                                {message.mediaUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                                    <img
-                                        src={message.mediaUrl}
-                                        alt="Media"
-                                        className="max-w-full rounded-lg max-h-64 object-cover"
-                                    />
-                                ) : (
-                                    <video
-                                        src={message.mediaUrl}
-                                        controls
-                                        className="max-w-full rounded-lg max-h-64"
-                                    />
-                                )}
-                            </div>
-                        )}
-
-                        <div className="whitespace-pre-wrap text-[13px] break-words">
-                            {message.message}
-                        </div>
-
-                        <div className={`flex justify-end font-medium items-right gap-1 mt-1 text-[11px] ${!isOwn ? 'text-gray/80' : 'text-gray-500 dark:text-gray-400'
-                            }`}>
-                            <span>{message.formattedTime}</span>
-                            {!isOwn && getStatusIcon(message.status)}
-                        </div>
-                    </div>
-
-                    {message.error && (
-                        <div className="text-xs text-red-500 mt-1 ml-1">
-                            Failed to send: {message.error}
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-        );
     };
 
     const handleKeyPress = (e) => {
@@ -392,8 +394,7 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                     </div>
                 ) : (
                     <>
-                        {/* Load more indicator */}
-                        <div ref={observerTarget} className="text-center py-2">
+                        <div ref={observerTarget} className="min-h-[400px] text-center py-2">
                             {loadingMore && (
                                 <CircularProgress size={24} className="text-gray-400" />
                             )}
@@ -418,6 +419,7 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                                         key={message._id}
                                         message={message}
                                         isOwn={message.sender === 'user'}
+                                        lead={lead}
                                     />
                                 ))}
                             </div>
@@ -484,12 +486,12 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
             </div>
 
             {/* Template Picker Dialog */}
-            {/* <TemplatePicker
-        open={templatePickerOpen}
-        onClose={() => setTemplatePickerOpen(false)}
-        onSelectTemplate={sendTemplate}
-        lead={lead}
-      /> */}
+            <TemplatePicker
+                open={templatePickerOpen}
+                onClose={() => setTemplatePickerOpen(false)}
+                onSelectTemplate={sendTemplate}
+                lead={lead}
+            />
 
             {/* Lead Info Menu */}
             <Menu
