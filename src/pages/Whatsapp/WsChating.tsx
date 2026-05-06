@@ -50,6 +50,15 @@ const getStatusIcon = (status) => {
     }
 };
 
+const getMediaIdFromUrl = (url) => {
+    try {
+        const parsedUrl = new URL(url);
+        return parsedUrl.searchParams.get("mid");
+    } catch (error) {
+        return null;
+    }
+};
+
 
 const MessageBubble = React.memo(({ message, isOwn, lead }) => {
     const isTemplate = message.templateName;
@@ -87,14 +96,14 @@ const MessageBubble = React.memo(({ message, isOwn, lead }) => {
                             {/* IMAGE */}
                             {message.mediaType === "image" && (
                                 <img
-                                    src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
+                                    src={message.sender === "user" ? `https://server.gatewayabroadeducations.com/api/v1/ws/media/${getMediaIdFromUrl(message.mediaUrl)}` : `https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
                                     alt="media"
                                     className="rounded-lg max-h-64 object-cover"
                                 />
                             )}
                             {!message.mediaType && (
                                 <img
-                                    src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
+                                    src={message.sender === "user" ? `https://server.gatewayabroadeducations.com/api/v1/ws/media/${getMediaIdFromUrl(message.mediaUrl)}` : `https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
                                     alt="media"
                                     className="rounded-lg max-h-64 object-cover"
                                 />
@@ -104,17 +113,17 @@ const MessageBubble = React.memo(({ message, isOwn, lead }) => {
                                     controls
                                     className="rounded-lg max-h-64"
                                 >
-                                    <source src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`} />
+                                    <source src={message.sender === "user" ? `https://server.gatewayabroadeducations.com/api/v1/ws/media/${getMediaIdFromUrl(message.mediaUrl)}` : `https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`} />
                                 </video>
                             )}
                             {message.mediaType === "audio" && (
                                 <audio controls className="w-full">
-                                    <source src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`} />
+                                    <source src={message.sender === "user" ? `https://server.gatewayabroadeducations.com/api/v1/ws/media/${getMediaIdFromUrl(message.mediaUrl)}` : `https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`} />
                                 </audio>
                             )}
                             {message.mediaType === "document" && (
                                 <a
-                                    href={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
+                                    href={message.sender === "user" ? `https://server.gatewayabroadeducations.com/api/v1/ws/media/${getMediaIdFromUrl(message.mediaUrl)}` : `https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg"
