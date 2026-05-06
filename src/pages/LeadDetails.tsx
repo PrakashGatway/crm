@@ -395,8 +395,6 @@ const LeadDetailPage = ({ selectedLead, closeModal, isOpen, clickToCall, setEdit
                                     lead={lead}
                                     onClose={() => setActiveTab("activity")}
                                     onNewMessage={(message) => {
-                                        // Optional: Handle new message notifications
-                                        console.log("New message:", message);
                                     }}
                                 />
                             </motion.div>

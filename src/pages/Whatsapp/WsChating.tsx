@@ -9,22 +9,12 @@ import {
     Tooltip,
     Menu,
     MenuItem,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     Button,
-    Chip,
     Typography,
-    Avatar,
-    LinearProgress
+    Avatar
 } from '@mui/material';
 import {
     Send,
-    Image,
-    FileText,
-    Smile,
-    MoreVert,
     Phone,
     Video,
     Info,
@@ -34,9 +24,10 @@ import {
     ChevronLeft,
     Grid3x3,
     Paperclip,
-    CheckCheck
+    CheckCheck,
+    FileText
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import api from '../../axiosInstance';
 import { toast } from 'react-toastify';
 import TemplatePicker from './TemplatePicker';
@@ -93,18 +84,46 @@ const MessageBubble = React.memo(({ message, isOwn, lead }) => {
                 >
                     {message.mediaUrl && (
                         <div className="mb-2">
-                            {message.mediaUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                            {/* IMAGE */}
+                            {message.mediaType === "image" && (
                                 <img
-                                    src={message.mediaUrl}
-                                    alt="Media"
-                                    className="max-w-full rounded-lg max-h-64 object-cover"
+                                    src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
+                                    alt="media"
+                                    className="rounded-lg max-h-64 object-cover"
                                 />
-                            ) : (
+                            )}
+                            {!message.mediaType && (
+                                <img
+                                    src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
+                                    alt="media"
+                                    className="rounded-lg max-h-64 object-cover"
+                                />
+                            )}
+                            {message.mediaType === "video" && (
                                 <video
-                                    src={message.mediaUrl}
                                     controls
-                                    className="max-w-full rounded-lg max-h-64"
-                                />
+                                    className="rounded-lg max-h-64"
+                                >
+                                    <source src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`} />
+                                </video>
+                            )}
+                            {message.mediaType === "audio" && (
+                                <audio controls className="w-full">
+                                    <source src={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`} />
+                                </audio>
+                            )}
+                            {message.mediaType === "document" && (
+                                <a
+                                    href={`https://server.gatewayabroadeducations.com/uploads/${message.mediaUrl}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg"
+                                >
+                                    <FileText className="h-5 w-5" />
+                                    <span>
+                                        {message.message || "Open Document"}
+                                    </span>
+                                </a>
                             )}
                         </div>
                     )}
@@ -145,11 +164,21 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
     const chatContainerRef = useRef(null);
     const observerTarget = useRef(null);
 
-    // Fetch initial messages
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+
+    const fileInputRef = useRef(null);
+
+
     useEffect(() => {
-        if (lead?._id) {
+        if (!lead?._id) return;
+        fetchMessages(null, true);
+        const interval = setInterval(() => {
             fetchMessages();
-        }
+        }, 5000);
+
+        return () => clearInterval(interval);
+
     }, [lead]);
 
     // Setup intersection observer for infinite scroll
@@ -170,7 +199,7 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
         return () => observer.disconnect();
     }, [hasMore, loadingMore, loading, messages]);
 
-    const fetchMessages = async (cursor = null) => {
+    const fetchMessages = async (cursor = null, forceBottom = false) => {
         try {
             const response = await api.get(`/ws/message/${lead._id}`, {
                 params: { cursor, limit: 50 }
@@ -180,7 +209,6 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                 const { messages: newMessages, pagination } = response.data.data;
 
                 if (cursor) {
-                    // Append older messages
                     setMessages(prev => ({
                         ...newMessages,
                         ...prev
@@ -193,11 +221,11 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                 setHasMore(pagination.hasMore);
                 setNextCursor(pagination.nextCursor);
             }
+            forceBottom && scrollToBottom();
         } catch (error) {
             console.error("Fetch messages error:", error);
             toast.error("Failed to load messages");
         } finally {
-            scrollToBottom()
             setLoading(false);
             setLoadingMore(false);
         }
@@ -251,6 +279,89 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
             setSending(false);
         }
     };
+
+    const sendMediaMessage = async () => {
+        if (!selectedFile || sending) return;
+
+        const maxSize = 5 * 1024 * 1024;
+
+        if (selectedFile.size > maxSize) {
+            toast.error("File size must be less than 5 MB");
+            return;
+        }
+
+        const messageText = newMessage.trim();
+        setNewMessage('');
+
+        try {
+            setUploading(true);
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            const uploadResponse = await api.post(
+                "/upload/single",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data"
+                    }
+                }
+            );
+            const mediaUrl = uploadResponse.data.url;
+
+            let mediaType = "document";
+
+            if (selectedFile.type.startsWith("image")) {
+                mediaType = "image";
+            } else if (selectedFile.type.startsWith("video")) {
+                mediaType = "video";
+            } else if (selectedFile.type.startsWith("audio")) {
+                mediaType = "audio";
+            }
+
+            const tempMessage = {
+                _id: Date.now().toString(),
+                message: messageText,
+                mediaUrl,
+                mediaType,
+                status: "sending",
+                sender: "system",
+                formattedTime: new Date().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                })
+            };
+
+            addMessageToGroup("Today", tempMessage);
+
+            const response = await api.post(
+                `/ws/message/attach/${lead._id} `,
+                {
+                    mediaType,
+                    mediaUrl,
+                    caption: messageText,
+                    filename: selectedFile.name
+                }
+            );
+
+            if (response.data.success) {
+                updateMessageStatus(
+                    tempMessage._id,
+                    response.data.data
+                );
+            }
+
+            setSelectedFile(null);
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to send media");
+        } finally {
+            setUploading(false);
+        }
+    }
+
 
     const sendTemplate = async (template, parameters) => {
         setTemplatePickerOpen(false);
@@ -431,7 +542,24 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
             </div>
 
             {/* Input Area */}
+
+
             <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-3">
+                {selectedFile && (
+                    <div className="mb-2 p-2 border rounded-lg bg-gray-100 flex items-center justify-between">
+                        <div className="text-sm">
+                            {selectedFile.name}
+                        </div>
+
+                        <Button
+                            color="error"
+                            size="small"
+                            onClick={() => setSelectedFile(null)}
+                        >
+                            Remove
+                        </Button>
+                    </div>
+                )}
                 <div className="flex items-end gap-2">
                     <Tooltip title="Templates">
                         <IconButton
@@ -441,9 +569,29 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                             <Grid3x3 className="h-5 w-5" />
                         </IconButton>
                     </Tooltip>
+                    <input
+                        type="file"
+                        hidden
+                        ref={fileInputRef}
+                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
 
-                    <Tooltip title="Attach">
-                        <IconButton>
+                            if (!file) return;
+
+                            const maxSize = 5 * 1024 * 1024;
+
+                            if (file.size > maxSize) {
+                                toast.error("Maximum file size is 5 MB");
+                                return;
+                            }
+
+                            setSelectedFile(file);
+                        }}
+                    />
+
+                    <Tooltip title="Attach Media">
+                        <IconButton onClick={() => fileInputRef.current?.click()}>
                             <Paperclip className="h-5 w-5" />
                         </IconButton>
                     </Tooltip>
@@ -469,7 +617,13 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
 
                     <Tooltip title="Send">
                         <IconButton
-                            onClick={sendMessage}
+                            onClick={() => {
+                                if (selectedFile) {
+                                    sendMediaMessage();
+                                } else {
+                                    sendMessage();
+                                }
+                            }}
                             disabled={!newMessage.trim() || sending}
                             sx={{
                                 bgcolor: newMessage.trim() ? '#25D366' : 'transparent',
