@@ -44,9 +44,12 @@ import {
   Upload as UploadIcon,
   PlayArrow as PlayIcon,
   Pause as PauseIcon,
+  ArrowLeft,
+  Reply,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import api from '../../axiosInstance';
+import { ArrowRight, ChevronRight, ExternalLink } from 'lucide-react';
 
 // Types
 interface WhatsAppTemplate {
@@ -491,11 +494,11 @@ export default function WhatsAppTemplateEditor() {
     const renderMediaPreview = () => {
       if (formData.type === 'IMAGE' && mediaPreview) {
         return (
-          <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2">
+          <div className="rounded-xl  -mx-1 -mt-1 p-3 ">
             <img
               src={mediaPreview}
               alt="Preview"
-              className="w-full max-h-[280px] object-cover"
+              className="w-full max-h-[280px] object-cover rounded-xl"
             />
           </div>
         );
@@ -503,11 +506,11 @@ export default function WhatsAppTemplateEditor() {
 
       if (formData.type === 'VIDEO' && mediaPreview) {
         return (
-          <div className="rounded-3xl overflow-hidden -mx-1 -mt-1 mb-2 relative">
+          <div className="rounded-xl overflow-hidden -mx-1 -mt-1 p-3 relative">
             <video
               ref={videoRef}
               src={mediaPreview}
-              className="w-full max-h-[280px] object-cover"
+              className="w-full max-h-[280px] object-cover rounded-xl"
               onClick={() => {
                 if (videoRef.current) {
                   isPlaying ? videoRef.current.pause() : videoRef.current.play();
@@ -537,7 +540,7 @@ export default function WhatsAppTemplateEditor() {
 
       if (formData.type === 'FILE' && selectedMedia) {
         return (
-          <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
+          <div className="bg-[#f0f0f0] rounded-xl p-3 flex items-center gap-3 m-3">
             <FileIcon className="text-gray-600 w-8 h-8 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{selectedMedia.name}</p>
@@ -551,8 +554,8 @@ export default function WhatsAppTemplateEditor() {
 
       if (formData.type === 'LOCATION') {
         return (
-          <div className="bg-[#f0f0f0] rounded-2xl p-3 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="bg-[#f0f0f0] rounded-xl p-3 flex items-center gap-3 m-2 ">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center  justify-center flex-shrink-0">
               <LocationIcon className="text-blue-600 w-6 h-6" />
             </div>
             <div>
@@ -640,92 +643,86 @@ export default function WhatsAppTemplateEditor() {
     };
 
     return (
-      <div className="bg-gray-100 rounded-3xl max-w-md mx-auto shadow-2xl overflow-hidden">
+      <div className=" max-w-md mx-auto  overflow-hidden">
 
 
         {/* Chat Background */}
-        <div className="bg-[#e5ddd5] min-h-[420px] p-4 relative">
-          {/* Subtle background pattern (optional) */}
-          <div className="absolute inset-0 bg-[radial-gradient(#c8b9a8_0.8px,transparent_1px)] bg-[length:20px_20px] opacity-30 pointer-events-none" />
+        <div className=" h-full p-4 flex items-start justify-center relative">
+          {/* Chat Bubble */}
+          <div className="max-w-[360px] w-full bg-white rounded-r-xl rounded-bl-xl rounded-tl-0 overflow-hidden shadow-lg">
 
-          <div className="flex justify-start">
-            {/* Message Bubble - Received style */}
-            <div
-              className={`
-              max-w-[85%] bg-white rounded-3xl px-4 py-3 shadow-sm
-              ${formData.type === 'IMAGE' || formData.type === 'VIDEO' ? 'p-1' : ''}
-            `}
-            >
-              {/* Type Label (for non-text) */}
-              {formData.type !== 'TEXT' && (
-                <div className="flex items-center gap-1.5 mb-2 px-1 text-green-600 text-xs font-medium">
-                  {formData.type === 'IMAGE' && <ImageIcon className="w-4 h-4" />}
-                  {formData.type === 'VIDEO' && <VideoIcon className="w-4 h-4" />}
-                  {formData.type === 'FILE' && <FileIcon className="w-4 h-4" />}
-                  {formData.type === 'LOCATION' && <LocationIcon className="w-4 h-4" />}
-                  {formData.type === 'CAROUSEL' && <CarouselIcon className="w-4 h-4" />}
-                  {formData.type === 'ORDER_DETAILS' && <OrderIcon className="w-4 h-4" />}
-                  <span>{formData.type.replace('_', ' ')}</span>
-                </div>
-              )}
+            <div className='absolute w-30 h-30 left-2 top-[11px] -z-1'>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="4.9 2.9 2.2 2.2">
+	<path d="M 7 3 V 3 H 7 V 3 V 3 V 3 V 3 H 5 Q 6 4 7 5 V 3" fill="#fff" />
+</svg>
+            </div>
 
-              {/* Header Text */}
+            {/* Image */}
+            {renderMediaPreview()}
+
+            {/* Message Content */}
+            <div className="bg-white px-3 py-2">
+
+              {/* Header */}
               {formData.header_text && (
-                <div className="mb-2 font-semibold text-gray-900 px-1">
+                <div className="text-black font-semibold text-[15px] mb-1">
                   {formData.header_text}
                 </div>
               )}
 
-              {/* Media / Content */}
-              {renderMediaPreview()}
-              {renderCarouselPreview()}
-              {renderOrderDetailsPreview()}
-
-              {/* Body Text */}
-              <div className="text-[15px] leading-[1.35] text-gray-800 whitespace-pre-wrap px-1">
-                {formData.sample_text || formData.text || "Message preview..."}
+              {/* Body */}
+              <div className="text-gray-800 text-[15px] leading-5 break-all">
+                {formData.sample_text || formData.text}
               </div>
 
               {/* Footer */}
               {formData.footer_text && (
-                <div className="mt-2 text-xs text-gray-500 px-1">
+                <div className="text-gray-800 text-[12px] mt-2">
                   {formData.footer_text}
                 </div>
               )}
 
-              {/* CTA Buttons */}
-              {formData.message_action_type === 'CTA' && formData.call_to_action?.length > 0 && (
-                <div className="mt-3 space-y-2 px-1">
-                  {formData.call_to_action.map((btn, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-[#dcf8c6] hover:bg-[#d3f0bd] border border-[#c3e8a8] text-[#0b7a3f] rounded-2xl py-2.5 text-center text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      {btn.button_title}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Quick Replies */}
-              {formData.message_action_type === 'QuickReplies' && formData.quick_replies?.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2 px-1">
-                  {formData.quick_replies.map((reply, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white border border-gray-300 text-gray-700 text-sm px-4 py-1.5 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      {reply}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Timestamp */}
-              <div className="text-right mt-1">
-                <span className="text-[10px] text-gray-400">12:34</span>
+              {/* Time */}
+              <div className="flex justify-end mt-1">
+                <span className="text-gray-800 text-[11px]">
+                  1:28 PM
+                </span>
               </div>
             </div>
+
+            {/* CTA Buttons */}
+            {formData.message_action_type === "CTA" &&
+              formData.call_to_action?.length > 0 && (
+                <div className="">
+                  {formData.call_to_action.map((btn, idx) => (
+                    <button
+                      key={idx}
+                      className="w-full py-3 px-4 text-[#00a884] bg-white text-sm font-medium   flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink />
+
+                      <span>{btn.button_title}</span>
+
+                    </button>
+                  ))}
+                </div>
+              )}
+            {/* Quick Replies */}
+            {formData.message_action_type === "QuickReplies" &&
+              formData.quick_replies?.length > 0 && (
+                <div className="p-2 flex flex-col gap-2 bg-white">
+                  {formData.quick_replies.map((reply, idx) => (
+                    <button
+                      key={idx}
+                      className="text-[#00a884] rounded-full px-4 py-1 text-sm"
+                    >
+                      <Reply className="w-4 h-4 mt-[1px]" />
+
+                      {reply}
+                    </button>
+                  ))}
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -1366,7 +1363,7 @@ export default function WhatsAppTemplateEditor() {
 
         {/* Preview Section */}
         {showPreview && (
-          <div className="w-1/3 border-l border-gray-200 bg-gray-50 overflow-y-auto p-6 sticky top-[73px]">
+          <div className="w-1/3 border-l border-gray-200 bg-gray-200 overflow-y-auto p-6 sticky top-[73px]">
             {renderWhatsAppPreview()}
           </div>
         )}
