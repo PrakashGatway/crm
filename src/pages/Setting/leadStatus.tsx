@@ -47,9 +47,9 @@ import Swal from 'sweetalert2';
 import api from '../../axiosInstance';
 import EmailTemplatesList from './TemplateList';
 import TeamManagement from '../Team';
-import { GroupIcon } from 'lucide-react';
-import WhatsAppTemplateEditor from './whatsappTemplate';
+import { GroupIcon, ImageIcon } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
+import AssetsManager from './assetManagement';
 
 interface LeadStatus {
   _id?: string;
@@ -79,7 +79,7 @@ export default function LeadStatusPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<OrderBy>('order');
-  const {user} = useAuth();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -160,9 +160,6 @@ export default function LeadStatusPage() {
     page * rowsPerPage + rowsPerPage
   );
 
-  // ─────────────────────────────────────────────────────────
-  // Form Handlers (Status)
-  // ─────────────────────────────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -274,6 +271,7 @@ export default function LeadStatusPage() {
     const labels: Record<TabType, string> = {
       statuses: 'Statuses',
       leads: 'Leads',
+      assets: 'Assets',
       teams: 'Teams',
       settings: 'Settings',
       emailEditor: 'Email Templates',
@@ -286,6 +284,7 @@ export default function LeadStatusPage() {
     const icons: Record<TabType, JSX.Element> = {
       statuses: <LabelIcon fontSize="small" />,
       teams: <GroupIcon fontSize="small" />,
+      assets: <ImageIcon fontSize="small" />,
       leads: <ListIcon fontSize="small" />,
       settings: <SettingsIcon fontSize="small" />,
       emailEditor: <SettingsIcon fontSize="small" />,
@@ -303,7 +302,7 @@ export default function LeadStatusPage() {
       {/* ─── Animated Tabs with Framer Motion ─── */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
         <div className="relative flex gap-1">
-          {(user.role === 'admin'  ? ['statuses', "emailEditor", "teams"] : ['emailEditor']).map((tab) => (
+          {(user.role === 'admin' ? ['statuses', "emailEditor", "assets", "teams"] : ['emailEditor']).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -585,13 +584,21 @@ export default function LeadStatusPage() {
           <TeamManagement />
         )}
 
-        {activeTab === 'whatsapp' && (
+        {/* {activeTab === 'whatsapp' && (
           <WhatsAppTemplateEditor />
-        )}
+        )} */}
 
-        {/* ═══════════════════════════════════════════════════
-                    SETTINGS TAB (Placeholder)
-                    ═══════════════════════════════════════════════════ */}
+        {activeTab === 'assets' && (
+          <motion.div
+            key="assets-tab"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            <AssetsManager />
+          </motion.div>)}
+
         {activeTab === 'emailEditor' && (
           <EmailTemplatesList />
         )}

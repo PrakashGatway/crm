@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileSpreadsheet, GroupIcon, ListIcon, SettingsIcon } from 'lucide-react';
+import { AtomIcon, FileSpreadsheet, GroupIcon, ListIcon, SettingsIcon } from 'lucide-react';
 import WhatsAppTemplateEditor from '../Setting/whatsappTemplate';
 import WhatsAppTemplateList from './Templates';
 import WhatsAppBroadcast from './whatsappBroadcast';
+import AutomationList from '../Automation/Pipeline';
 
 type TabType = 'statuses' | 'leads' | 'emailEditor' | 'settings';
 
@@ -19,7 +20,8 @@ export default function WhatsappPage() {
             settings: 'Settings',
             emailEditor: 'Email Templates',
             whatsapp: 'Create Template',
-            templates: 'Templates'
+            templates: 'Templates',
+            automations: 'Automation'
         };
         return labels[tab];
     };
@@ -31,7 +33,8 @@ export default function WhatsappPage() {
             settings: <SettingsIcon fontSize="small" />,
             emailEditor: <SettingsIcon fontSize="small" />,
             whatsapp: <SettingsIcon fontSize="small" />,
-            broadcast: <FileSpreadsheet fontSize="small" />
+            broadcast: <FileSpreadsheet fontSize="small" />,
+            automations: <AtomIcon fontSize="small" />
         };
         return icons[tab];
     };
@@ -41,7 +44,7 @@ export default function WhatsappPage() {
             {/* ─── Animated Tabs with Framer Motion ─── */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
                 <div className="relative flex gap-1">
-                    {(["broadcast", "whatsapp", "templates"] as TabType[]).map((tab) => (
+                    {(["broadcast", "whatsapp", "templates","automations"] as TabType[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -78,6 +81,8 @@ export default function WhatsappPage() {
                 {activeTab === 'templates' && (
                     <WhatsAppTemplateList />
                 )}
+
+                {activeTab == "automations" && <AutomationList />}
 
             </AnimatePresence>
         </div>

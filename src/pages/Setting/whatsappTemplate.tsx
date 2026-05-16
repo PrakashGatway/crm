@@ -150,12 +150,15 @@ export default function WhatsAppTemplateEditor() {
   const [showPreview, setShowPreview] = useState(true);
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [previewValues, setPreviewValues] = useState<Record<string, string>>({});
+  const [parametersValues, setParametersValues] = useState<Record<string, string>>({});
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string>('');
   const [carouselCards, setCarouselCards] = useState<CarouselCard[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
 
   const [formData, setFormData] = useState<WhatsAppTemplate>({
     name: '',
@@ -378,6 +381,21 @@ export default function WhatsAppTemplateEditor() {
     }));
   };
 
+  const loadAssets = async () => {
+    try {
+
+      const response = await api.get("/assets");
+
+      setAssets(response.data.data || []);
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    loadAssets();
+  }, []);
   // Submit template
   const handleSubmit = async () => {
     if (!formData.name || !formData.label || !formData.text) {
@@ -412,6 +430,7 @@ export default function WhatsAppTemplateEditor() {
         name: formData.name.toLowerCase().replace(/\s+/g, '_'),
         text: formData.text,
         sample_text: formData.sample_text,
+        parameters: parametersValues,
         footer_text: formData.footer_text,
         message_action_type: formData.message_action_type === 'None' ? undefined : formData.message_action_type,
         call_to_action: formData.message_action_type === 'CTA' ? formData.call_to_action : undefined,
@@ -569,79 +588,6 @@ export default function WhatsAppTemplateEditor() {
       return null;
     };
 
-    const renderCarouselPreview = () => {
-      if (formData.type !== 'CAROUSEL' || carouselCards.length === 0) return null;
-
-      return (
-        <div className="mb-3 -mx-1 overflow-x-auto flex gap-3 pb-3 snap-x snap-mandatory scrollbar-hide">
-          {carouselCards.map((card, idx) => (
-            <div
-              key={card.id}
-              className="min-w-[220px] bg-white rounded-3xl border border-gray-200 overflow-hidden snap-start shadow-sm"
-            >
-              {card.media_url && (
-                <div className="h-52 overflow-hidden">
-                  <img
-                    src={card.media_url}
-                    alt={card.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="p-3">
-                <p className="font-semibold text-base leading-tight">{card.title}</p>
-                <p className="text-sm text-gray-600 mt-1.5 line-clamp-2">{card.description}</p>
-
-                {card.buttons.map((btn, btnIdx) => (
-                  <div
-                    key={btnIdx}
-                    className="mt-3 border border-green-600 text-green-600 rounded-full py-2 text-center text-sm font-medium hover:bg-green-50 transition-colors"
-                  >
-                    {btn.button_title}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    };
-
-    const renderOrderDetailsPreview = () => {
-      if (formData.type !== 'ORDER_DETAILS' || !formData.order_details) return null;
-
-      const total = formData.order_details.items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-
-      return (
-        <div className="bg-white rounded-3xl p-4 border border-gray-100 mb-3">
-          <div className="flex justify-between items-center mb-3 pb-2 border-b">
-            <p className="font-semibold">Order #{formData.order_details.order_id}</p>
-            <p className="text-sm text-gray-500">{formData.order_details.currency}</p>
-          </div>
-
-          {formData.order_details.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between py-2 text-sm">
-              <div>
-                <p className="font-medium">{item.name}</p>
-                <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
-              </div>
-              <p className="font-medium tabular-nums">
-                ${(item.price * item.quantity).toFixed(2)}
-              </p>
-            </div>
-          ))}
-
-          <div className="border-t mt-2 pt-3 flex justify-between font-semibold">
-            <p>Total</p>
-            <p>${total.toFixed(2)}</p>
-          </div>
-        </div>
-      );
-    };
-
     return (
       <div className=" max-w-md mx-auto  overflow-hidden">
 
@@ -653,8 +599,8 @@ export default function WhatsAppTemplateEditor() {
 
             <div className='absolute w-30 h-30 left-2 top-[11px] -z-1'>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="4.9 2.9 2.2 2.2">
-	<path d="M 7 3 V 3 H 7 V 3 V 3 V 3 V 3 H 5 Q 6 4 7 5 V 3" fill="#fff" />
-</svg>
+                <path d="M 7 3 V 3 H 7 V 3 V 3 V 3 V 3 H 5 Q 6 4 7 5 V 3" fill="#fff" />
+              </svg>
             </div>
 
             {/* Image */}
@@ -917,6 +863,29 @@ export default function WhatsAppTemplateEditor() {
                   </div>
                 )}
 
+                {parameters.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <Typography variant="subtitle2" className="mb-2 flex items-center gap-1">
+                      <MessageIcon fontSize="small" />
+                      Parameters value
+                    </Typography>
+                    <div className="space-y-2">
+                      {parameters.map((param, idx) => (
+                        <TextField
+                          key={param.id}
+                          variant='standard'
+                          size="small"
+                          label={`Example for {{${idx + 1}}}`}
+                          value={parametersValues[param.id] || ''}
+                          onChange={(e) => setParametersValues(prev => ({ ...prev, [param.id]: e.target.value }))}
+                          placeholder={`Enter example value for parameter ${idx + 1}`}
+                          fullWidth
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <TextField
                   fullWidth
                   variant='standard'
@@ -947,9 +916,9 @@ export default function WhatsAppTemplateEditor() {
                 {formData.type !== 'TEXT' && formData.type !== 'CAROUSEL' && formData.type !== 'ORDER_DETAILS' && (
                   <div className="space-y-3">
                     <Typography variant="subtitle1">
-                      {formData.type === 'IMAGE' && 'Upload Image'}
-                      {formData.type === 'VIDEO' && 'Upload Video'}
-                      {formData.type === 'FILE' && 'Upload File'}
+                      {formData.type === 'IMAGE' && 'Select Image'}
+                      {formData.type === 'VIDEO' && 'Select Video'}
+                      {formData.type === 'FILE' && 'Select File'}
                       {formData.type === 'LOCATION' && 'Location Details'}
                     </Typography>
 
@@ -961,32 +930,95 @@ export default function WhatsAppTemplateEditor() {
                         <TextField variant='standard' label="Address" placeholder="20 W 34th St, New York, NY 10001" fullWidth className="col-span-2" />
                       </div>
                     ) : (
-                      <div
-                        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition-colors"
-                        onClick={() => document.getElementById('media-upload')?.click()}
-                      >
-                        <input
-                          id="media-upload"
-                          type="file"
-                          accept={
-                            formData.type === 'IMAGE' ? 'image/*' :
-                              formData.type === 'VIDEO' ? 'video/*' :
-                                '*/*'
-                          }
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleMediaUpload(e.target.files[0]);
-                            }
-                          }}
-                        />
-                        {mediaPreview ? (
+                      <div>
+                        <FormControl fullWidth>
+                          <InputLabel>Select Media</InputLabel>
+
+                          <Select
+                            variant="standard"
+                            value={selectedAsset?._id || ""}
+                            onChange={(e) => {
+
+                              const asset = assets.find(
+                                (a) => a._id === e.target.value
+                              );
+                              setSelectedAsset(asset);
+                              setMediaPreview(`https://server.gatewayabroadeducations.com`+ asset.fileUrl || "");
+                            }}
+                          >
+
+                            {assets
+                              .filter((asset) => {
+
+                                if (formData.type === "IMAGE") {
+                                  return asset.type === "image";
+                                }
+
+                                if (formData.type === "VIDEO") {
+                                  return asset.type === "video";
+                                }
+
+                                if (formData.type === "FILE") {
+                                  return [
+                                    "document",
+                                    "pdf",
+                                    "archive"
+                                  ].includes(asset.type);
+                                }
+
+                                return true;
+                              })
+                              .map((asset) => (
+
+                                <MenuItem
+                                  key={asset._id}
+                                  value={asset._id}
+                                >
+
+                                  <div className="flex items-center gap-3">
+
+                                    {/* Preview */}
+
+                                    {asset.type === "image" && (
+                                      <img
+                                        src={`https://server.gatewayabroadeducations.com`+ asset.fileUrl}
+                                        className="w-10 h-10 rounded object-cover"
+                                      />
+                                    )}
+
+                                    {asset.type === "video" && (
+                                      <VideoIcon />
+                                    )}
+
+                                    {asset.type !== "image" &&
+                                      asset.type !== "video" && (
+                                        <FileIcon />
+                                      )}
+
+                                    <div>
+                                      <p className="text-sm">
+                                        {asset.originalName}
+                                      </p>
+
+                                      <p className="text-xs text-gray-500">
+                                        {asset.folder}
+                                      </p>
+                                    </div>
+
+                                  </div>
+
+                                </MenuItem>
+                              ))}
+
+                          </Select>
+                        </FormControl>
+                        {mediaPreview && (
                           <div>
                             {formData.type === 'IMAGE' && (
-                              <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                              <img src={mediaPreview} alt="Preview" className="max-h-40 mt-2 rounded-lg" />
                             )}
                             {formData.type === 'VIDEO' && (
-                              <video src={mediaPreview} className="max-h-48 mx-auto rounded-lg" controls />
+                              <video src={mediaPreview} className="max-h-40 mt-2 rounded-lg" controls />
                             )}
                             {formData.type === 'FILE' && (
                               <div className="flex items-center justify-center gap-2">
@@ -999,24 +1031,9 @@ export default function WhatsAppTemplateEditor() {
                                 </div>
                               </div>
                             )}
-                            <Button size="small" className="mt-2" onClick={() => {
-                              setSelectedMedia(null);
-                              setMediaPreview('');
-                            }}>
-                              Change File
-                            </Button>
+                            
                           </div>
-                        ) : (
-                          <div>
-                            <UploadIcon className="text-4xl text-gray-400 mb-2" />
-                            <p className="text-gray-600">Click to upload {formData.type.toLowerCase()}</p>
-                            <p className="text-sm text-gray-400 mt-1">
-                              {formData.type === 'IMAGE' && 'JPG, PNG, GIF up to 5MB'}
-                              {formData.type === 'VIDEO' && 'MP4, MOV up to 16MB'}
-                              {formData.type === 'FILE' && 'PDF, DOC, XLS up to 10MB'}
-                            </p>
-                          </div>
-                        )}
+                        ) }
                       </div>
                     )}
                   </div>
@@ -1215,7 +1232,6 @@ export default function WhatsAppTemplateEditor() {
                     <MenuItem value="None">None</MenuItem>
                     <MenuItem value="CTA">Call to Action (Buttons)</MenuItem>
                     <MenuItem value="QuickReplies">Quick Replies</MenuItem>
-                    <MenuItem value="All">Both</MenuItem>
                   </Select>
                 </FormControl>
 

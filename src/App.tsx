@@ -28,6 +28,9 @@ import FollowUpBot from "./layout/Followup";
 import JoinMeetingPage from "./MeetingJoin";
 import EmailBroadcast from "./pages/EmailMarketing";
 import WhatsappPage from "./pages/Whatsapp/whatsappPage";
+import AutomationList from "./pages/Automation/Pipeline";
+import AutomationEditor from "./pages/Automation/AutomationEditor";
+import MessageAutomationForm from "./pages/Automation/AutomationForm";
 
 // Define roles
 export const ROLES = {
@@ -77,8 +80,9 @@ export default function App() {
                 <Route path="/lead-report" element={<DailyReport />} />
                 <Route path="/broadcast" element={<EmailBroadcast />} />
                 <Route path="/whatsapp" element={<WhatsappPage />} />
-
-
+                {/* <Route path="/automations" element={<AutomationList />} /> */}
+                <Route path="/automations/create" element={<MessageAutomationForm />} />
+                <Route path="/automations/edit/:id" element={<MessageAutomationForm />} />
               </Route>
 
               <Route path="*" element={<ComingSoon />} />

@@ -35,9 +35,6 @@ import {
     Typography,
     LinearProgress,
     Alert,
-    Snackbar,
-    Tab,
-    Tabs,
     Box,
     Radio,
     RadioGroup,
@@ -562,47 +559,6 @@ export default function WhatsAppBroadcast() {
             }
         }
     };
-
-    const handleMediaUpload = async (file) => {
-        try {
-            if (!file) return;
-
-            const localPreview = URL.createObjectURL(file);
-            setMediaPreview(localPreview);
-            setMediaFile(file);
-
-            // ✅ set media type
-            setFormData(prev => ({
-                ...prev,
-                mediaType: file.type,
-            }));
-
-            // ✅ upload to server
-            const formDataObj = new FormData();
-            formDataObj.append("file", file);
-
-            const res = await api.post("/upload/single", formDataObj, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-
-            const url = res.data?.url;
-
-            if (!url) {
-                throw new Error("Upload failed: No URL returned");
-            }
-            setFormData(prev => ({
-                ...prev,
-                mediaUrl: url,
-            }));
-
-        } catch (error) {
-            console.error("Upload error:", error);
-            toast.error("Failed to upload media");
-        }
-    };
-
     const getStatusColor = (status) => {
         const colors = {
             draft: 'bg-gray-100 text-gray-700',
@@ -976,159 +932,9 @@ export default function WhatsAppBroadcast() {
                                     </FormControl>
                                 </div>
 
-                                {formData.templateId &&
-                                    (() => {
-                                        const selectedTemplate = templates.find(
-                                            (template) => template.name === formData.templateId
-                                        );
-
-                                        if (!selectedTemplate || selectedTemplate.total_parameters <= 0) return null;
-
-                                        return (
-                                            <div className="md:col-span-2 space-y-3">
-                                                <Typography variant="subtitle2">Template Variables:</Typography>
-
-                                                {Array.from({ length: selectedTemplate.total_parameters }).map((_, index) => {
-                                                    const key = `param_${index + 1}`;
-
-                                                    return (
-                                                        <TextField
-                                                            key={key}
-                                                            label={`Parameter ${index + 1}`}
-                                                            value={templateVariables[key] || ""}
-                                                            onChange={(e) =>
-                                                                setTemplateVariables((prev) => ({
-                                                                    ...prev,
-                                                                    [key]: e.target.value,
-                                                                }))
-                                                            }
-                                                            fullWidth
-                                                            size="small"
-                                                            helperText={`Enter value for {{${index + 1}}}`}
-                                                        />
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    })()}
-
                                 {renderTemplatePreview()}
                             </>
                         )}
-
-                        {formData.messageType === 'template' && (() => {
-                            const selectedTemplate = templates.find(
-                                t => t.name === formData.templateId
-                            );
-
-                            if (!selectedTemplate) return null;
-
-                            const isMediaTemplate = selectedTemplate.type != "TEXT";
-
-                            console.log(selectedTemplate);
-
-                            if (!isMediaTemplate) return null;
-
-                            return (
-                                <>
-                                    {/* Upload Section */}
-                                    <div className="md:col-span-2">
-                                        <Button
-                                            variant="outlined"
-                                            component="label"
-                                            startIcon={<ImageIcon />}
-                                            className="!mb-4"
-                                        >
-                                            Upload {selectedTemplate.type} Media
-                                            <input
-                                                type="file"
-                                                hidden
-                                                accept={
-                                                    selectedTemplate.type === "IMAGE"
-                                                        ? "image/*"
-                                                        : selectedTemplate.type === "VIDEO"
-                                                            ? "video/*"
-                                                            : ".pdf"
-                                                }
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-
-                                                    // ✅ validate type
-                                                    if (
-                                                        selectedTemplate.type === "IMAGE" &&
-                                                        !file.type.startsWith("image/")
-                                                    ) {
-                                                        alert("Please upload an image");
-                                                        return;
-                                                    }
-
-                                                    if (
-                                                        selectedTemplate.type === "VIDEO" &&
-                                                        !file.type.startsWith("video/")
-                                                    ) {
-                                                        alert("Please upload a video");
-                                                        return;
-                                                    }
-
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        mediaType: file.type
-                                                    }));
-
-                                                    handleMediaUpload(file); // ✅ pass file properly
-                                                }}
-                                            />
-                                        </Button>
-
-                                        {/* Preview */}
-                                        {mediaPreview && (
-                                            <div className="mt-2">
-                                                {formData.mediaType?.startsWith("image/") && (
-                                                    <img
-                                                        src={mediaPreview}
-                                                        alt="Preview"
-                                                        className="max-w-full h-auto rounded-lg max-h-64"
-                                                    />
-                                                )}
-
-                                                {formData.mediaType?.startsWith("video/") && (
-                                                    <video
-                                                        src={mediaPreview}
-                                                        controls
-                                                        className="max-w-full rounded-lg max-h-64"
-                                                    />
-                                                )}
-
-                                                {!formData.mediaType?.startsWith("image/") &&
-                                                    !formData.mediaType?.startsWith("video/") && (
-                                                        <Alert severity="info">
-                                                            File uploaded successfully
-                                                        </Alert>
-                                                    )}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Caption */}
-                                    <div className="md:col-span-2">
-                                        <TextField
-                                            label="Caption (Optional)"
-                                            name="content"
-                                            fullWidth
-                                            multiline
-                                            rows={2}
-                                            value={formData.content}
-                                            onChange={handleInputChange}
-                                            helperText={`${formData.content.length}/1024 characters`}
-                                            error={formData.content.length > 1024}
-                                        />
-                                    </div>
-                                </>
-                            );
-                        })()}
-
-                        {/* Lead Filters Section */}
                         <div className="md:col-span-2">
                             <Divider className="my-2">
                                 <Chip label="Lead Filters" />

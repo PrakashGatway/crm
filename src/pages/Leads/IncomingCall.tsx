@@ -13,23 +13,19 @@ import {
   PhoneOff,
   Clock,
   RefreshCw,
-  Play,
-  AlertTriangle,
-  Download,
   Volume2,
   User,
   Hash,
   CheckCircle,
   XCircle,
   Info,
-  ChevronDown,
-  ChevronUp,
   ChevronRight,
+  AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "../../components/ui/button/Button";
 
-const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLeadForActivity,setActivityModalOpen }) => {
+const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose, setSelectedLeadForActivity, setActivityModalOpen }) => {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,27 +33,25 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [selectedCall, setSelectedCall] = useState(null);
-  const [expandedDetails, setExpandedDetails] = useState({});
   const [audioPlaying, setAudioPlaying] = useState(null);
   const audioRef = useRef(null);
 
-  // Call status mapping
+  // Call status mapping - Updated with all possible statuses from API
   const callStatusMap = {
-    "3": { text: "Answered", color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30", icon: PhoneCall },
     "Answer": { text: "Answered", color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900/30", icon: PhoneCall },
-
-    "4": { text: "Busy", color: "text-orange-600", bgColor: "bg-orange-100 dark:bg-orange-900/30", icon: PhoneOff },
-    "5": { text: "No Answer", color: "text-yellow-600", bgColor: "bg-yellow-100 dark:bg-yellow-900/30", icon: PhoneMissed },
-    "Missed": { text: "No Answer", color: "text-yellow-600", bgColor: "bg-yellow-100 dark:bg-yellow-900/30", icon: PhoneMissed },
-
-    "6": { text: "Rejected", color: "text-red-600", bgColor: "bg-red-100 dark:bg-red-900/30", icon: XCircle },
-    "7": { text: "Failed", color: "text-red-700", bgColor: "bg-red-50 dark:bg-red-900/20", icon: AlertTriangle },
+    "Missed": { text: "Missed", color: "text-red-600", bgColor: "bg-red-100 dark:bg-red-900/30", icon: PhoneMissed },
+    "Busy": { text: "Busy", color: "text-orange-600", bgColor: "bg-orange-100 dark:bg-orange-900/30", icon: PhoneOff },
+    "No Answer": { text: "No Answer", color: "text-yellow-600", bgColor: "bg-yellow-100 dark:bg-yellow-900/30", icon: PhoneMissed },
+    "Failed": { text: "Failed", color: "text-red-700", bgColor: "bg-red-50 dark:bg-red-900/20", icon: AlertCircle },
+    "DID Expired": { text: "DID Expired", color: "text-gray-600", bgColor: "bg-gray-100 dark:bg-gray-800", icon: AlertCircle },
+    "Pulse Exhausted": { text: "Pulse Exhausted", color: "text-gray-600", bgColor: "bg-gray-100 dark:bg-gray-800", icon: AlertCircle }
   };
 
-  // Default status for unknown
-  const getCallStatus = (status) => {
+  // Get call status with proper mapping - priority to root status then callDetails.status
+  const getCallStatus = (call) => {
+    const status = call?.status || call?.callDetails?.status || "Unknown";
     return callStatusMap[status] || { 
-      text: "Unknown", 
+      text: status, 
       color: "text-gray-600", 
       bgColor: "bg-gray-100 dark:bg-gray-800", 
       icon: PhoneIncoming 
@@ -103,7 +97,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
         }
 
         // Check if there are more pages
-        const totalPages = Math.ceil((data.pagination?.total || 0) / params.limit);
+        const totalPages = data.pagination?.totalPages || 1;
         setHasMore(currentPage < totalPages);
         
         if (showToast) {
@@ -113,8 +107,8 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
         // Update page number for next fetch
         if (!reset) {
           setPage(currentPage + 1);
-        } else {
-          setPage(2); // Start at page 2 after reset
+        } else if (data.pagination) {
+          setPage(2);
         }
       } catch (err) {
         console.error("Failed to fetch incoming calls:", err);
@@ -130,7 +124,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
 
   // Load more calls
   const loadMoreCalls = () => {
-    if (!loadingMore && hasMore) {
+    if (!loadingMore && hasMore && !loading && !refreshing) {
       fetchCalls(false, false);
     }
   };
@@ -141,26 +135,15 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
       setPage(1);
       setCalls([]);
       setSelectedCall(null);
+      setHasMore(true);
       fetchCalls(true);
     }
-  }, [isOpen]);
-
-  // Handle audio play/pause
-  const handleAudioPlay = (callId) => {
-    if (audioPlaying === callId) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      setAudioPlaying(null);
-    } else {
-      setAudioPlaying(callId);
-    }
-  };
+  }, [isOpen, leadPhone]);
 
   // Group calls by date
   const groupedCalls = calls.reduce((acc, call) => {
-    const date = moment(call.ivrSTime).format("DD MMM YYYY");
+    const callTime = call.callDetails?.ivrSTime || call.createdAt;
+    const date = moment(callTime).format("DD MMM YYYY");
     if (!acc[date]) acc[date] = [];
     acc[date].push(call);
     return acc;
@@ -173,10 +156,20 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
 
   // Format duration
   const formatDuration = (seconds) => {
-    if (!seconds) return "0s";
+    if (!seconds && seconds !== 0) return "0s";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  };
+
+  // Get recording URL
+  const getRecordingUrl = (call) => {
+    return call.callDetails?.recordingUrl || null;
+  };
+
+  // Check if leadinfo has actual data (not empty object)
+  const hasLeadInfo = (leadinfo) => {
+    return leadinfo && Object.keys(leadinfo).length > 0 && leadinfo.fullName;
   };
 
   return (
@@ -187,6 +180,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
       className="max-w-7xl w-full"
     >
       <div className="relative w-full h-[95vh] rounded-3xl bg-white dark:bg-gray-900 overflow-hidden flex flex-col">
+        {/* Header */}
         <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 shadow px-6 py-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -197,6 +191,11 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                   Incoming Calls
                 </h2>
+                {leadName && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    for {leadName}
+                  </p>
+                )}
               </div>
             </div>
             
@@ -246,7 +245,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                     transition={{ delay: dateIndex * 0.05 }}
                     className="mb-6"
                   >
-                    <div className="sticky -top-4 z-10 bg-gray-300 p-2 rounded-lg dark:bg-gray-900 py-2 mb-2">
+                    <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 py-2 mb-2">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-500" />
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
@@ -260,9 +259,11 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
 
                     <div className="space-y-2">
                       {groupedCalls[date].map((call, callIndex) => {
-                        const status = getCallStatus(call.status);
-                        const StatusIcon = status?.icon || PhoneIncoming;
+                        const status = getCallStatus(call);
+                        const StatusIcon = status.icon;
                         const isSelected = selectedCall?._id === call._id;
+                        const callTime = call.callDetails?.ivrSTime || call.createdAt;
+                        const duration = call.callDetails?.duration || 0;
 
                         return (
                           <motion.div
@@ -287,7 +288,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between text-sm mb-1">
                                     <p className="font-medium text-gray-900 dark:text-white truncate">
-                                      {call.phone}
+                                      {call.phone || "Unknown Number"}
                                     </p>
                                     <span className={`text-xs px-2 py-1 rounded-full ${status.bgColor} ${status.color}`}>
                                       {status.text}
@@ -297,11 +298,17 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                                   <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                                     <span className="flex items-center gap-1">
                                       <Clock className="w-3 h-3" />
-                                      {moment(call.ivrSTime).format("h:mm A")}
+                                      {moment(callTime).format("h:mm A")}
                                     </span>
                                     <span>•</span>
-                                    <span>{formatDuration(call.duration)}</span>
+                                    <span>{formatDuration(duration)}</span>
                                   </div>
+                                  
+                                  {hasLeadInfo(call.leadinfo) && (
+                                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+                                      {call.leadinfo.fullName}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -336,7 +343,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                 </div>
               )}
 
-              {/* Loading Indicator for initial load */}
+              {/* Loading Indicator */}
               {loading && calls.length === 0 && (
                 <div className="flex justify-center py-12">
                   <div className="text-center">
@@ -378,7 +385,7 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
           </div>
 
           {/* Call Details - Right Panel */}
-          <div className=" w-1/2 flex-1 flex flex-col">
+          <div className="w-1/2 flex flex-col">
             {selectedCall ? (
               <div className="flex-1 overflow-y-auto p-6">
                 <motion.div
@@ -394,14 +401,14 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                         Call Details
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        {moment(selectedCall.ivrSTime).format("dddd, MMMM D, YYYY")}
+                        {moment(selectedCall.callDetails?.ivrSTime || selectedCall.createdAt).format("dddd, MMMM D, YYYY")}
                       </p>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <div className={`px-3 py-1 rounded-full ${getCallStatus(selectedCall.status)?.bgColor}`}>
-                        <span className={`text-sm font-medium ${getCallStatus(selectedCall.status)?.color}`}>
-                          {getCallStatus(selectedCall.status)?.text}
+                      <div className={`px-3 py-1 rounded-full ${getCallStatus(selectedCall)?.bgColor}`}>
+                        <span className={`text-sm font-medium ${getCallStatus(selectedCall)?.color}`}>
+                          {getCallStatus(selectedCall)?.text}
                         </span>
                       </div>
                     </div>
@@ -419,25 +426,31 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Phone Number</span>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {selectedCall?.phone}
+                            {selectedCall.phone || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Start Time</span>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {moment(selectedCall?.ivrSTime).format("h:mm:ss A")}
+                            {moment(selectedCall.callDetails?.ivrSTime || selectedCall.createdAt).format("h:mm:ss A")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">End Time</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {moment(selectedCall.callDetails?.ivrETime || selectedCall.updatedAt).format("h:mm:ss A")}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Duration</span>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {formatDuration(selectedCall?.duration)}
+                            {formatDuration(selectedCall.callDetails?.duration)}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Call Type</span>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            Incoming
+                            {selectedCall.callDetails?.callType === "IBD" ? "Inbound" : selectedCall.callDetails?.callType || "Incoming"}
                           </span>
                         </div>
                       </div>
@@ -451,96 +464,126 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                       </h4>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Target Number</span>
+                          <span className="text-gray-600 dark:text-gray-400">Master Number</span>
                           <span className="font-medium text-gray-900 dark:text-white text-sm">
-                            {selectedCall?.extraDetails?.did || "N/A"}
+                            {selectedCall.masterCallNumber || "N/A"}
                           </span>
                         </div>
-                        {selectedCall.extraDetails?.HangupBySourceDetected && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Caller ID</span>
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">
+                            {selectedCall.callDetails?.callerId || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Direction</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {selectedCall.extraDetails?.Direction || "In"}
+                          </span>
+                        </div>
+                        {selectedCall.callDetails?.status && selectedCall.callDetails.status !== "Answer" && (
                           <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Hung Up By</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {selectedCall.extraDetails.HangupBySourceDetected === "0" ? (
-                                <span className="flex items-center gap-1 text-red-600">
-                                  <XCircle className="w-4 h-4" />
-                                  Student
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-green-600">
-                                  <CheckCircle className="w-4 h-4" />
-                                  Counselor
-                                </span>
-                              )}
+                            <span className="text-gray-600 dark:text-gray-400">Call Result</span>
+                            <span className="font-medium text-orange-600 dark:text-orange-400">
+                              {selectedCall.callDetails.status}
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
-                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                      <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                        <Hash className="w-4 h-4" />
-                        Leads Details
 
+                  {/* Lead Details Section - Only show if leadinfo has data */}
+                  {hasLeadInfo(selectedCall.leadinfo) && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Lead Details
+                        </h4>
                         <Button
                           size="sm"
                           onClick={() => {
                             setSelectedLeadForActivity(selectedCall.leadinfo);
                             setActivityModalOpen(true);
                           }}
-                          variant="outline">
-                          View Detail
+                          variant="outline"
+                        >
+                          View Details
                         </Button>
-                      </h4>
+                      </div>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Name</span>
+                          <span className="text-gray-600 dark:text-gray-400">Full Name</span>
                           <span className="font-medium text-gray-900 dark:text-white text-sm">
-                            {selectedCall?.leadinfo?.fullName || "N/A"}
+                            {selectedCall.leadinfo.fullName || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Email Add.</span>
+                          <span className="text-gray-600 dark:text-gray-400">Email</span>
                           <span className="font-medium text-gray-900 dark:text-white text-sm">
-                            {selectedCall?.leadinfo?.email || "N/A"}
+                            {selectedCall.leadinfo.email || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Phone Number</span>
                           <span className="font-medium text-gray-900 dark:text-white text-sm">
-                            {selectedCall?.leadinfo?.phone10 || "N/A"}
+                            {selectedCall.leadinfo.phone10 || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">Status</span>
+                          <span className="text-gray-600 dark:text-gray-400">Lead Status</span>
                           <span className="font-medium text-gray-900 dark:text-white uppercase text-sm">
-                            {selectedCall?.leadinfo?.status || "N/A"}
+                            {selectedCall.leadinfo.status || "N/A"}
                           </span>
                         </div>
                       </div>
                     </div>
+                  )}
 
-                  {/* Recording Section */}
-                  {/* {selectedCall.recordingData?.[0] && (
+                  {/* Counselor Info Section - Only show if counselorInfo has data */}
+                  {selectedCall.counselorInfo && Object.keys(selectedCall.counselorInfo).length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                      <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Counselor Information
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Counselor Name</span>
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">
+                            {selectedCall.counselorInfo.name || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Counselor Email</span>
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">
+                            {selectedCall.counselorInfo.email || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Counselor Phone</span>
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">
+                            {selectedCall.counselorInfo.phoneNumber || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recording Section - Only show for answered calls with recording URL */}
+                  {getRecordingUrl(selectedCall) && selectedCall.callDetails?.status === "Answer" && (
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                           <Volume2 className="w-4 h-4" />
                           Call Recording
                         </h4>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadRecording(selectedCall)}
-                          className="flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download
-                        </Button>
                       </div>
                       
                       <div className="space-y-4">
                         <audio
+                          ref={audioRef}
                           key={selectedCall._id}
                           controls
                           className="w-full"
@@ -548,19 +591,16 @@ const IncomingCallsModal = ({ leadPhone, leadName, isOpen, onClose,setSelectedLe
                           onPause={() => setAudioPlaying(null)}
                           onEnded={() => setAudioPlaying(null)}
                         >
-                          <source
-                            src={`https://w.digiskyweb.com/v2/recording/direct/28882897${selectedCall.recordingData[0].file}`}
-                            type="audio/mpeg"
-                          />
+                          <source src={getRecordingUrl(selectedCall)} type="audio/mpeg" />
                           Your browser does not support the audio element.
                         </audio>
                         
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          <p>Recording available: {moment(selectedCall.ivrSTime).format("MMMM D, YYYY h:mm A")}</p>
+                          <p>Recording available from {moment(selectedCall.callDetails?.ivrSTime || selectedCall.createdAt).format("MMMM D, YYYY h:mm A")}</p>
                         </div>
                       </div>
                     </div>
-                  )} */}
+                  )}
                 </motion.div>
               </div>
             ) : (
