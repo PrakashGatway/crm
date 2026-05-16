@@ -43,5 +43,16 @@ api.interceptors.response.use(
 export const ImageBaseUrl = "https://server.gatewayabroadeducations.com/uploads"
 export const audioBaseUrl = "https://server.gatewayabroadeducations.com/"
 
+export const automationAPI = {
+  getAll: (filters) => api.get("/automations", { params: filters }),
+  getById: (id) => api.get(`/automations/${id}`),
+  create: (data) => api.post("/automations", data),
+  update: (id, data) => api.put(`/automations/${id}`, data),
+  delete: (id) => api.delete(`/automations/${id}`),
+  duplicate: (id) => api.post(`/automations/${id}/duplicate`),
+  toggleStatus: (id) => api.patch(`/automations/${id}/toggle-status`),
+  validate: (data) => api.post("/automations/validate", data),
+};
+
 
 export default api;
