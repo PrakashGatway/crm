@@ -61,7 +61,6 @@ export default function App() {
           </Route>
 
           <Route element={<ProtectedRoute />}>
-
             <Route element={<AppLayout />}>
               <Route index path="/" element={<CallAnalytics />} />
               <Route path="/profile" element={<UserProfiles />} />
