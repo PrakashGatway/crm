@@ -53,9 +53,6 @@ const CallAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const lkjh = await api.get('/msg/recentChats')
-
-
       const params = {
         startDate: dateRange.startDate.toISOString(),
         endDate: dateRange.endDate.toISOString(),
