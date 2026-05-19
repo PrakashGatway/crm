@@ -31,6 +31,7 @@ import WhatsappPage from "./pages/Whatsapp/whatsappPage";
 import AutomationList from "./pages/Automation/Pipeline";
 import AutomationEditor from "./pages/Automation/AutomationEditor";
 import MessageAutomationForm from "./pages/Automation/AutomationForm";
+import ChatsPage from "./pages/Whatsapp/RecentChat";
 
 // Define roles
 export const ROLES = {
@@ -55,11 +56,9 @@ export default function App() {
         <FollowUpBot />
         <Routes>
           <Route path="/join-meeting/:id" element={<JoinMeetingPage />} />
-
           <Route element={<AuthRoute />}>
             <Route path="/signin" element={<SignIn />} />
           </Route>
-
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index path="/" element={<CallAnalytics />} />
@@ -71,26 +70,25 @@ export default function App() {
               <Route element={<ProtectedRoute roles={[ROLES.ADMIN]} />}>
                 <Route path="/users" element={<UserListPage />} />
               </Route>
-
               <Route element={<ProtectedRoute roles={[ROLES.COUNSEL, ROLES.ADMIN, ROLES.MANAGER, ROLES.LEADER]} />}>
                 <Route path="/leads" element={<LeadManagement />} />
                 <Route path="/leads/:id" element={<LeadDetailPage />} />
+
                 <Route path="/leadsss" element={<LeadDetailPageM />} />
                 <Route path="/lead-report" element={<DailyReport />} />
                 <Route path="/broadcast" element={<EmailBroadcast />} />
                 <Route path="/whatsapp" element={<WhatsappPage />} />
+                <Route path="/chat" element={<ChatsPage />} />
+
                 <Route path="/automations" element={<AutomationList />} />
                 <Route path="/automations/create" element={<MessageAutomationForm />} />
                 <Route path="/automations/edit/:id" element={<MessageAutomationForm />} />
-                <Route path="/auto/edit/:id" element={<AutomationEditor/>} />
-
+                <Route path="/auto/edit/:id" element={<AutomationEditor />} />
               </Route>
-
               <Route path="*" element={<ComingSoon />} />
             </Route>
           </Route>
           <Route path="/unauthorized" element={<NotFound />} />
-
         </Routes>
       </AuthProvider>
     </Router>

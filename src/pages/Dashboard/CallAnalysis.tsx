@@ -53,6 +53,8 @@ const CallAnalytics = () => {
     try {
       setLoading(true);
       setError(null);
+      const lkjh = await api.get('/msg/recentChats')
+
 
       const params = {
         startDate: dateRange.startDate.toISOString(),
@@ -70,7 +72,7 @@ const CallAnalytics = () => {
       setAnalytics(data);
       setCounselors(response.data.counselors || []);
 
-      if(data.length === 0) {
+      if (data.length === 0) {
         setSummary({
           totalCalls: 0,
           totalOutbound: 0,
@@ -401,67 +403,67 @@ const CallAnalytics = () => {
   );
 
   // Empty State
-const EmptyState = () => (
-  <div className="bg-white dark:bg-gray-800 min-h-[70vh] flex flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-sm">
-    {/* Animated GIF Container */}
-    <div className="relative mb-6">
-      <div className="w-42 h-42 mx-auto relative">
-        {/* Animated ringing phone GIF */}
-        <img 
-          src="https://assets-v2.lottiefiles.com/a/33c74770-1151-11ee-973a-3bc111579927/xBzT3oj0jY.gif"
-          alt="No calls animation"
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            // Fallback to Lottie or static animation if GIF fails to load
-            e.target.src = "https://assets10.lottiefiles.com/packages/lf20_puciaxcq.json";
-          }}
-        />
-      </div>
-      
-      {/* Subtle ring animation around the icon */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-40 h-40 rounded-full border-2 border-blue-200 dark:border-blue-800 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
-      </div>
-    </div>
+  const EmptyState = () => (
+    <div className="bg-white dark:bg-gray-800 min-h-[70vh] flex flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-sm">
+      {/* Animated GIF Container */}
+      <div className="relative mb-6">
+        <div className="w-42 h-42 mx-auto relative">
+          {/* Animated ringing phone GIF */}
+          <img
+            src="https://assets-v2.lottiefiles.com/a/33c74770-1151-11ee-973a-3bc111579927/xBzT3oj0jY.gif"
+            alt="No calls animation"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              // Fallback to Lottie or static animation if GIF fails to load
+              e.target.src = "https://assets10.lottiefiles.com/packages/lf20_puciaxcq.json";
+            }}
+          />
+        </div>
 
-    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-      No Call Data Available
-    </h3>
-    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-md mx-auto">
-      We couldn't find any call records for the selected criteria. Try adjusting your date range or counselor filter to see analytics.
-    </p>
-    
-    {/* Action Buttons */}
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-      <button
-        onClick={() => {
-          setDays(1);
-          const end = new Date();
-          const start = new Date();
-          start.setDate(start.getDate() - 1);
-          setDateRange({ startDate: start, endDate: end });
-        }}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
-      >
-        <RefreshCw className="w-4 h-4" />
-        Reset to Last 24 Hours
-      </button>
-      
-      <button
-        onClick={() => {
-          const end = new Date();
-          const start = new Date();
-          start.setDate(start.getDate() - 7);
-          setDateRange({ startDate: start, endDate: end });
-        }}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300"
-      >
-        <Calendar className="w-4 h-4" />
-        Last 7 Days
-      </button>
+        {/* Subtle ring animation around the icon */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-40 h-40 rounded-full border-2 border-blue-200 dark:border-blue-800 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
+        </div>
+      </div>
+
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        No Call Data Available
+      </h3>
+      <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-md mx-auto">
+        We couldn't find any call records for the selected criteria. Try adjusting your date range or counselor filter to see analytics.
+      </p>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button
+          onClick={() => {
+            setDays(1);
+            const end = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - 1);
+            setDateRange({ startDate: start, endDate: end });
+          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reset to Last 24 Hours
+        </button>
+
+        <button
+          onClick={() => {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - 7);
+            setDateRange({ startDate: start, endDate: end });
+          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300"
+        >
+          <Calendar className="w-4 h-4" />
+          Last 7 Days
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
 
   // Error State
   const ErrorState = () => (
@@ -506,8 +508,8 @@ const EmptyState = () => (
                   key={option.value}
                   onClick={() => handleQuickRange(option.days)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${days === option.days
-                      ? 'bg-white text-gray-900 -sm font-semibold'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                    ? 'bg-white text-gray-900 -sm font-semibold'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                     }`}
                 >
                   {option.label}
@@ -674,8 +676,8 @@ const EmptyState = () => (
                       key={tab}
                       onClick={() => setActiveChartTab(tab)}
                       className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${activeChartTab === tab
-                          ? 'bg-white text-gray-900 -sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-gray-900 -sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                     >
                       {tab === 'performance' ? 'Call Volume' : 'Duration Trends'}
@@ -739,8 +741,8 @@ const EmptyState = () => (
                           setCounselorStatusSelections({});
                         }}
                         className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${(selectedStatusFilter === null && value === 'all') || selectedStatusFilter === value
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                           }`}
                       >
                         {value === 'all' ? 'All' : label}
@@ -944,8 +946,8 @@ const EmptyState = () => (
                           </td>
                           <td className="px-5 py-3 whitespace-nowrap text-right">
                             <span className={`text-xs font-semibold px-2 py-1 rounded-full ${connectRate >= 70 ? 'bg-green-100 text-green-700' :
-                                connectRate >= 40 ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-red-100 text-red-700'
+                              connectRate >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
                               }`}>
                               {connectRate}%
                             </span>

@@ -180,14 +180,12 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
 
 
     useEffect(() => {
-        if (!lead?._id) return;
+        // if (!lead?._id) return;
         fetchMessages(null, true);
         const interval = setInterval(() => {
             fetchMessages();
         }, 5000);
-
         return () => clearInterval(interval);
-
     }, [lead]);
 
     // Setup intersection observer for infinite scroll
@@ -210,7 +208,7 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
 
     const fetchMessages = async (cursor = null, forceBottom = false) => {
         try {
-            const response = await api.get(`/ws/message/${lead._id}`, {
+            const response = await api.get(`/ws/message/${lead._id || lead.phone10}`, {
                 params: { cursor, limit: 50 }
             });
 
