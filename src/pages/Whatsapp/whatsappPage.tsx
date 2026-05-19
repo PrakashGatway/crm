@@ -1,15 +1,49 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AtomIcon, FileSpreadsheet, GroupIcon, ListIcon, SettingsIcon } from 'lucide-react';
 import WhatsAppTemplateEditor from '../Setting/whatsappTemplate';
 import WhatsAppTemplateList from './Templates';
 import WhatsAppBroadcast from './whatsappBroadcast';
 import AutomationList from '../Automation/Pipeline';
+import { useSearchParams } from 'react-router';
 
 type TabType = 'statuses' | 'leads' | 'emailEditor' | 'settings';
 
 export default function WhatsappPage() {
-    const [activeTab, setActiveTab] = useState<TabType>('broadcast');
+    const [searchParams, setSearchParams] =
+        useSearchParams();
+
+    const queryTab =
+        searchParams.get('tab') as TabType;
+
+    const [activeTab, setActiveTab] =
+        useState<TabType>(
+            queryTab || 'broadcast'
+        );
+
+
+    useEffect(() => {
+
+        if (
+            queryTab &&
+            queryTab !== activeTab
+        ) {
+
+            setActiveTab(queryTab);
+        }
+
+    }, [queryTab]);
+
+
+    useEffect(() => {
+
+        setSearchParams({
+            tab: activeTab
+        });
+
+    }, [activeTab]);
+
+
 
     const getTabLabel = (tab: TabType) => {
         const labels: Record<TabType, string> = {
@@ -44,7 +78,7 @@ export default function WhatsappPage() {
             {/* ─── Animated Tabs with Framer Motion ─── */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
                 <div className="relative flex gap-1">
-                    {(["broadcast", "whatsapp", "templates","automations"] as TabType[]).map((tab) => (
+                    {(["broadcast", "whatsapp", "templates", "automations"] as TabType[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}

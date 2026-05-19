@@ -56,6 +56,7 @@ import {
     XCircle,
     Eye,
     Activity,
+    View,
 } from "lucide-react";
 import { automationAPI } from "../../axiosInstance";
 import { toast } from "react-toastify";
@@ -537,7 +538,7 @@ const AutomationList = () => {
                                             selected={isSelected}
                                             sx={{ "&:hover": { bgcolor: "#f9fafb" } }}
                                         >
-                                            
+
                                             <TableCell>
                                                 <div>
                                                     <Link
@@ -603,6 +604,16 @@ const AutomationList = () => {
                                                     <Tooltip title="Edit">
                                                         <IconButton
                                                             component={Link}
+                                                            to={`/auto/edit/${automation._id}`}
+                                                            size="small"
+                                                            sx={{ color: "#4f46e5" }}
+                                                        >
+                                                            <View size={18} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Edit">
+                                                        <IconButton
+                                                            component={Link}
                                                             to={`/automations/edit/${automation._id}`}
                                                             size="small"
                                                             sx={{ color: "#4f46e5" }}
@@ -665,6 +676,10 @@ const AutomationList = () => {
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
+                <MenuItem component={Link} to={`/auto/edit/${selectedAutomationId}`} onClick={handleCloseMenu}>
+                    <ListItemIcon><View size={16} /></ListItemIcon>
+                    <ListItemText>View Workflow</ListItemText>
+                </MenuItem>
                 <MenuItem component={Link} to={`/automations/edit/${selectedAutomationId}`} onClick={handleCloseMenu}>
                     <ListItemIcon><Edit size={16} /></ListItemIcon>
                     <ListItemText>Edit Workflow</ListItemText>
