@@ -72,7 +72,7 @@ const JoinMeetingPage = () => {
     const checkJoinWindow = () => {
       const now = new Date();
       const scheduledAt = new Date(meetingData.meetingDetails.scheduledAt);
-      const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+      const windowMs = 10 * 60 * 1000; // 5 minutes in milliseconds
 
       const timeDiff = now - scheduledAt;
       const absDiff = Math.abs(timeDiff);
