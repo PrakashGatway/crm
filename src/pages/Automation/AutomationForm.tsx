@@ -55,6 +55,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import api, { automationAPI } from "../../axiosInstance";
 import { toast } from "react-toastify";
 import { CheckCircleIcon } from "lucide-react";
+import AutomationEditorWithProvider from "./AutomationEditor";
 
 
 // Action Type Components
@@ -786,7 +787,8 @@ const MessageAutomationForm = () => {
     }
 
     return (
-        <div className="max-w-7xl p-2 mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 items-start">
+         <div className="w-full lg:max-w-none"> 
             <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
                 {/* Header */}
                 <Box sx={{ p: 3, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -1963,6 +1965,13 @@ const MessageAutomationForm = () => {
                 </Box>
             </Paper>
         </div >
+         <div className="h-[calc(100vh-6rem)] bg-gray-50 rounded-lg border border-gray-200 overflow- sticky top-6">
+         <AutomationEditorWithProvider
+      formData={formData}
+      setFormData={setFormData}
+   />
+    </div>
+        </div>
     );
 };
 

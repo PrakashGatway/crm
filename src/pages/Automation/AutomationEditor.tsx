@@ -43,6 +43,7 @@ import {
     Card,
     CardContent,
     alpha,
+    CircularProgress,
 } from "@mui/material";
 import {
     Add as AddIcon,
@@ -665,7 +666,8 @@ const StepConfigPanel = ({ step, onSave, onClose }) => {
 };
 
 // Main Automation Editor Component
-const AutomationEditor = () => {
+const AutomationEditor = ({ formData,
+    setFormData }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -674,34 +676,115 @@ const AutomationEditor = () => {
     const [currentStepData, setCurrentStepData] = useState(null);
     const [currentNodeId, setCurrentNodeId] = useState(null);
     const [selectedNode, setSelectedNode] = useState(null);
-    const [automationName, setAutomationName] = useState("");
-    const [automationDescription, setAutomationDescription] = useState("");
-    const [automationCategory, setAutomationCategory] = useState("LEAD_NURTURING");
-    const [triggerType, setTriggerType] = useState("MANUAL");
+    // const [automationName, setAutomationName] = useState("");
+    // const [automationDescription, setAutomationDescription] = useState("");
+    // const [automationCategory, setAutomationCategory] = useState("LEAD_NURTURING");
+    // const [triggerType, setTriggerType] = useState("MANUAL");
     const [loading, setLoading] = useState(false);
-    const [showSidebar, setShowSidebar] = useState(true);
+    const [showSidebar, setShowSidebar] = useState(false);
     const reactFlowWrapper = useRef(null);
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
     useEffect(() => {
-        if (id) {
-            loadAutomation();
-        } else {
-            initializeNewAutomation();
+
+        console.log("LIVE DATA", formData);
+
+    }, [formData]);
+
+   const onNodeDragStop = (event, node) => {
+
+    const updatedSteps = formData.steps.map((step) => {
+
+        if (step.stepId === node.id) {
+
+            return {
+                ...step,
+                ui: {
+                    x: node.position.x,
+                    y: node.position.y
+                }
+            };
+
         }
-    }, [id]);
+
+        return step;
+
+    });
+
+    setFormData({
+        ...formData,
+        steps: updatedSteps
+    });
+
+};
+
+    useEffect(() => {
+
+        if (!formData?.steps) return;
+
+        const flowNodes = formData.steps.map((step, index) => ({
+            id: step.stepId,
+            type: step.type.toLowerCase(),
+            position: step.ui || {
+                x: 250,
+                y: index * 180
+            },
+            data: {
+                label: step.name,
+                step: step,
+                onEdit: (stepData) =>
+                    openStepModal(stepData, step.stepId)
+            }
+        }));
+
+        const flowEdges = [];
+
+        formData.steps.forEach((step) => {
+
+            if (step.transitions?.length > 0) {
+
+                step.transitions.forEach((transition, idx) => {
+
+                    if (transition.nextStepId) {
+
+                        flowEdges.push({
+                            id: `${step.stepId}-${transition.nextStepId}-${idx}`,
+                            source: step.stepId,
+                            target: transition.nextStepId,
+                            label: transition.name,
+                            markerEnd: {
+                                type: MarkerType.ArrowClosed
+                            },
+                            animated: true,
+                            style: {
+                                stroke: '#888',
+                                strokeWidth: 2
+                            },
+                            data: {
+                                transition
+                            }
+                        });
+
+                    }
+
+                });
+
+            }
+
+        });
+
+        setNodes(flowNodes);
+        setEdges(flowEdges);
+
+    }, [formData]);
 
     const loadAutomation = async () => {
         try {
             setLoading(true);
             const response = await automationAPI.getById(id);
             const automation = response.data.data;
-            setAutomationName(automation.name);
-            setAutomationDescription(automation.description || "");
-            setAutomationCategory(automation.category);
-            setTriggerType(automation.trigger?.type || "MANUAL");
 
-            // Convert steps to React Flow nodes
+
             const flowNodes = automation.steps.map((step) => ({
                 id: step.stepId,
                 type: step.type.toLowerCase(),
@@ -713,7 +796,6 @@ const AutomationEditor = () => {
                 },
             }));
 
-            // Convert transitions to edges
             const flowEdges = [];
             automation.steps.forEach((step) => {
                 if (step.transitions && step.transitions.length > 0) {
@@ -800,7 +882,6 @@ const AutomationEditor = () => {
 
     const saveStepConfig = (stepConfig) => {
         if (currentNodeId) {
-            // Update existing node
             setNodes((nds) =>
                 nds.map((node) => {
                     if (node.id === currentNodeId) {
@@ -820,7 +901,6 @@ const AutomationEditor = () => {
                 })
             );
         } else {
-            // Add new node
             const newNode = {
                 id: stepConfig.stepId,
                 type: stepConfig.type.toLowerCase(),
@@ -850,13 +930,9 @@ const AutomationEditor = () => {
                 toast.error("Cannot delete Start or End nodes");
                 return;
             }
-
-            // Remove all edges connected to this node
             setEdges((eds) => eds.filter(
                 edge => edge.source !== selectedNode.id && edge.target !== selectedNode.id
             ));
-
-            // Remove the node
             setNodes((nds) => nds.filter(node => node.id !== selectedNode.id));
             setSelectedNode(null);
             toast.success("Step deleted");
@@ -866,8 +942,6 @@ const AutomationEditor = () => {
     const handleSave = async () => {
         try {
             setLoading(true);
-
-            // Prepare steps with their transitions from edges
             const steps = nodes.map((node) => {
                 const outgoingEdges = edges.filter(edge => edge.source === node.id);
                 const transitions = outgoingEdges.map((edge, idx) => ({
@@ -876,7 +950,6 @@ const AutomationEditor = () => {
                     matchType: edge.data?.transition?.matchType || "AND",
                     nextStepId: edge.target,
                 }));
-
                 return {
                     stepId: node.id,
                     name: node.data.label,
@@ -888,7 +961,6 @@ const AutomationEditor = () => {
                 };
             });
 
-            // Find start step
             const startStep = steps.find(step => step.type === "START");
             if (!startStep) {
                 toast.error("No start step found in automation");
@@ -897,13 +969,13 @@ const AutomationEditor = () => {
             }
 
             const automationData = {
-                name: automationName || "Untitled Automation",
-                description: automationDescription,
-                category: automationCategory,
+                name: formData.name || "Untitled Automation",
+                description: formData.description,
+                category: formData.category,
                 trigger: {
-                    type: triggerType,
+                    type: formData.trigger.type,
                     filters: {},
-                    schedule: triggerType === "SCHEDULED" ? { cron: "", timezone: "UTC" } : {}
+                    schedule: formData.trigger.type === "SCHEDULED" ? { cron: "", timezone: "UTC" } : {}
                 },
                 steps: steps,
                 startStepId: startStep.stepId,
@@ -926,93 +998,73 @@ const AutomationEditor = () => {
         }
     };
 
-    const onNodeClick = (event, node) => {
-        setSelectedNode(node);
-    };
+    const onNodeClick = (event, node) => setSelectedNode(node);
 
-    const onEdgeUpdate = useCallback(
-        (oldEdge, newConnection) => {
-            setEdges((els) => updateEdge(oldEdge, newConnection, els));
-        },
-        [setEdges]
-    );
+    const onEdgeUpdate = useCallback((oldEdge, newConnection) => {
+        setEdges((els) => updateEdge(oldEdge, newConnection, els));
+    }, [setEdges]);
 
-    const onConnect = useCallback(
-        (params) => {
-            const sourceNode = nodes.find(n => n.id === params.source);
-            const targetNode = nodes.find(n => n.id === params.target);
-
-            if (!sourceNode || !targetNode) {
-                toast.error("Invalid connection");
-                return;
-            }
-
-            if (sourceNode.type === 'end') {
-                toast.error("Cannot connect from End node");
-                return;
-            }
-
-            if (targetNode.type === 'start') {
-                toast.error("Cannot connect to Start node");
-                return;
-            }
-
-            const newEdge = {
-                ...params,
-                id: `${params.source}-${params.target}-${Date.now()}`,
-                markerEnd: { type: MarkerType.ArrowClosed },
-                animated: true,
-                label: 'Transition',
-                style: { stroke: '#888', strokeWidth: 2 },
-            };
-
-            setEdges((eds) => addEdge(newEdge, eds));
-            toast.success("Connection added");
-        },
-        [nodes, setEdges]
-    );
+    const onConnect = useCallback((params) => {
+        const sourceNode = nodes.find(n => n.id === params.source);
+        const targetNode = nodes.find(n => n.id === params.target);
+        if (!sourceNode || !targetNode) {
+            toast.error("Invalid connection");
+            return;
+        }
+        if (sourceNode.type === 'end') {
+            toast.error("Cannot connect from End node");
+            return;
+        }
+        if (targetNode.type === 'start') {
+            toast.error("Cannot connect to Start node");
+            return;
+        }
+        const newEdge = {
+            ...params,
+            id: `${params.source}-${params.target}-${Date.now()}`,
+            markerEnd: { type: MarkerType.ArrowClosed },
+            animated: true,
+            label: 'Transition',
+            style: { stroke: '#888', strokeWidth: 2 },
+        };
+        setEdges((eds) => addEdge(newEdge, eds));
+        toast.success("Connection added");
+    }, [nodes, setEdges]);
 
     const onDragOver = useCallback((event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
-    const onDrop = useCallback(
-        (event) => {
-            event.preventDefault();
-            const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-            const type = event.dataTransfer.getData('application/reactflow');
-
-            if (!type || !reactFlowInstance || !reactFlowBounds) return;
-
-            const position = reactFlowInstance.project({
-                x: event.clientX - reactFlowBounds.left,
-                y: event.clientY - reactFlowBounds.top,
-            });
-
-            const newNodeId = `step_${Date.now()}`;
-            const newNode = {
-                id: newNodeId,
-                type: type,
-                position,
-                data: {
-                    label: type === 'action' ? 'New Action' : type === 'condition' ? 'New Condition' : 'New Delay',
-                    step: {
-                        stepId: newNodeId,
-                        name: type === 'action' ? 'New Action' : type === 'condition' ? 'New Condition' : 'New Delay',
-                        type: type.toUpperCase(),
-                        actions: [],
-                        transitions: [],
-                        delay: type === 'delay' ? { value: 1, unit: "minutes" } : undefined
-                    },
-                    onEdit: (step) => openStepModal(step, newNodeId),
+    const onDrop = useCallback((event) => {
+        event.preventDefault();
+        const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+        const type = event.dataTransfer.getData('application/reactflow');
+        if (!type || !reactFlowInstance || !reactFlowBounds) return;
+        const position = reactFlowInstance.project({
+            x: event.clientX - reactFlowBounds.left,
+            y: event.clientY - reactFlowBounds.top,
+        });
+        const newNodeId = `step_${Date.now()}`;
+        const newNode = {
+            id: newNodeId,
+            type: type,
+            position,
+            data: {
+                label: type === 'action' ? 'New Action' : type === 'condition' ? 'New Condition' : 'New Delay',
+                step: {
+                    stepId: newNodeId,
+                    name: type === 'action' ? 'New Action' : type === 'condition' ? 'New Condition' : 'New Delay',
+                    type: type.toUpperCase(),
+                    actions: [],
+                    transitions: [],
+                    delay: type === 'delay' ? { value: 1, unit: "minutes" } : undefined
                 },
-            };
-
-            setNodes((nds) => nds.concat(newNode));
-        },
-        [reactFlowInstance, setNodes]
-    );
+                onEdit: (step) => openStepModal(step, newNodeId),
+            },
+        };
+        setNodes((nds) => nds.concat(newNode));
+    }, [reactFlowInstance, setNodes]);
 
     const nodeColor = (node) => {
         switch (node.type) {
@@ -1026,64 +1078,83 @@ const AutomationEditor = () => {
 
     if (loading && id) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading automation...</p>
+                    <CircularProgress size={32} className="mx-auto" />
+                    <p className="mt-3 text-xs text-gray-600">Loading automation...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="h-[90vh] flex flex-col bg-gray-50">
-            {/* Header */}
-            <div className="bg-white border-b-2 p-4">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4 flex-1">
-                        <div className="flex items-center gap-2">
-                            <Settings className="w-6 h-6 text-blue-600" />
-                            <h1 className="text-base font-semibold">Automation Editor</h1>
+        <div className="h-full flex flex-col bg-gray-50 text-[11px]">
+            {/* ========== COMPACT HEADER ========== */}
+            <div className="bg-white border-b px-3 py-2 shrink-0">
+                {/* <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <Settings className="w-4 h-4 text-blue-600" />
+                            <h1 className="text-xs font-semibold truncate">Automation Editor</h1>
                         </div>
-                        <div className="h-6 w-px bg-gray-300"></div>
+                        <div className="h-4 w-px bg-gray-300 shrink-0" />
                         <input
                             type="text"
                             placeholder="Automation Name"
-                            value={automationName}
-                            onChange={(e) => setAutomationName(e.target.value)}
-                            className="text-base font-medium border-0 focus:ring-0 focus:outline-none focus:border-b-2 focus:border-blue-500 px-2 py-1 bg-transparent"
+                            value={formData.name || ""}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    name: e.target.value
+                                })
+                            }
+                            className="text-xs font-medium border-0 focus:ring-0 focus:outline-none focus:border-b-2 focus:border-blue-500 px-1.5 py-1 bg-transparent min-w-0 flex-1 truncate placeholder:text-gray-400"
                         />
-                                        <div className=" flex gap-4">
-                    <select
-                        value={automationCategory}
-                        onChange={(e) => setAutomationCategory(e.target.value)}
-                        className="text-sm border rounded px-2 py-1"
-                    >
-                        <option value="LEAD_NURTURING">Lead Nurturing</option>
-                        <option value="FOLLOW_UP">Follow Up</option>
-                        <option value="ADMISSION">Admission</option>
-                        <option value="PAYMENT">Payment</option>
-                        <option value="VISA">Visa</option>
-                        <option value="CUSTOM">Custom</option>
-                    </select>
-                    <select
-                        value={triggerType}
-                        onChange={(e) => setTriggerType(e.target.value)}
-                        className="text-sm border rounded px-2 py-1"
-                    >
-                        <option value="MANUAL">Manual Trigger</option>
-                        <option value="LEAD_CREATED">Lead Created</option>
-                        <option value="TAG_ADDED">Tag Added</option>
-                        <option value="PAYMENT_COMPLETED">Payment Completed</option>
-                        <option value="SCHEDULED">Scheduled</option>
-                    </select>
-                </div>
+                        <div className="flex gap-2 shrink-0">
+                            <select
+                                value={formData.category || ""}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        category: e.target.value
+                                    })
+                                }
+                                className="text-[10px] border rounded px-2 py-1 bg-white shrink-0 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                                <option value="LEAD_NURTURING">Lead Nurturing</option>
+                                <option value="FOLLOW_UP">Follow Up</option>
+                                <option value="ADMISSION">Admission</option>
+                                <option value="PAYMENT">Payment</option>
+                                <option value="VISA">Visa</option>
+                                <option value="CUSTOM">Custom</option>
+                            </select>
+                            <select
+                                value={formData.trigger?.type || ""}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        trigger: {
+                                            ...formData.trigger,
+                                            type: e.target.value
+                                        }
+                                    })
+                                }
+                                className="text-[10px] border rounded px-2 py-1 bg-white shrink-0 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                                <option value="MANUAL">Manual</option>
+                                <option value="LEAD_CREATED">Lead Created</option>
+                                <option value="TAG_ADDED">Tag Added</option>
+                                <option value="PAYMENT_COMPLETED">Payment</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                            </select>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 shrink-0">
                         <Button
                             variant="outlined"
                             onClick={() => navigate("/automations")}
                             size="small"
+                            sx={{ minWidth: 'auto', px: 1.5, fontSize: '0.7rem', height: '28px' }}
                         >
                             Cancel
                         </Button>
@@ -1091,98 +1162,83 @@ const AutomationEditor = () => {
                             variant="contained"
                             onClick={handleSave}
                             disabled={loading}
-                            startIcon={loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> : <Save size={18} />}
+                            size="small"
+                            sx={{ minWidth: 'auto', px: 1.5, fontSize: '0.7rem', height: '28px' }}
+                            startIcon={loading ? <CircularProgress size={12} /> : <Save size={12} />}
                         >
-                            {loading ? "Saving..." : "Save Automation"}
+                            {loading ? "Saving..." : "Save"}
                         </Button>
                     </div>
-                </div>
-
+                </div> */}
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar */}
+            {/* ========== MAIN CONTENT AREA ========== */}
+            <div className="flex-1 flex overflow-hidden min-h-0">
+
+                {/* ----- Compact Sidebar ----- */}
                 {showSidebar && (
-                    <div className="w-64 bg-white border-r shadow-sm flex flex-col">
-                        <div className="p-4 border-b flex justify-between items-center">
-                            <h3 className="font-semibold">Components</h3>
-                            <IconButton size="small" onClick={() => setShowSidebar(false)}>
-                                <EyeOff className="w-4 h-4" />
+                    <div className="w-40 bg-white border-r flex flex-col shrink-0">
+                        <div className="px-2.5 py-2 border-b flex justify-between items-center">
+                            <h3 className="font-semibold text-[10px]">Components</h3>
+                            <IconButton size="small" onClick={() => setShowSidebar(false)} sx={{ p: 0.5, '& svg': { width: 14, height: 14 } }}>
+                                <EyeOff />
                             </IconButton>
                         </div>
-                        <div className="flex-1 p-4 space-y-3">
-                            <div
-                                draggable
-                                onDragStart={(event) => {
-                                    event.dataTransfer.setData('application/reactflow', 'action');
-                                    event.dataTransfer.effectAllowed = 'move';
-                                }}
-                                className="p-3 bg-blue-50 border-2 border-blue-200 rounded-lg cursor-move hover:bg-blue-100 transition-colors"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <TaskIcon className="w-4 h-4 text-blue-600" />
-                                    <span className="text-sm font-medium">Action</span>
+                        <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                            {[
+                                { type: 'action', label: 'Action', desc: 'Send messages, tags', icon: TaskIcon, bg: 'bg-blue-50', border: 'border-blue-200', color: 'text-blue-600' },
+                                { type: 'condition', label: 'Condition', desc: 'Branch logic', icon: PauseIcon, bg: 'bg-orange-50', border: 'border-orange-200', color: 'text-orange-600' },
+                                { type: 'delay', label: 'Delay', desc: 'Wait duration', icon: ScheduleIcon, bg: 'bg-purple-50', border: 'border-purple-200', color: 'text-purple-600' },
+                            ].map((item) => (
+                                <div
+                                    key={item.type}
+                                    draggable
+                                    onDragStart={(event) => {
+                                        event.dataTransfer.setData('application/reactflow', item.type);
+                                        event.dataTransfer.effectAllowed = 'move';
+                                    }}
+                                    className={`p-2 ${item.bg} ${item.border} border rounded cursor-move hover:opacity-90 transition-opacity`}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <item.icon className={`w-3.5 h-3.5 ${item.color} shrink-0`} />
+                                        <span className="text-[10px] font-medium truncate">{item.label}</span>
+                                    </div>
+                                    <p className="text-[9px] text-gray-500 mt-0.5 truncate">{item.desc}</p>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Send messages, add tags, etc.</p>
-                            </div>
-                            <div
-                                draggable
-                                onDragStart={(event) => {
-                                    event.dataTransfer.setData('application/reactflow', 'condition');
-                                    event.dataTransfer.effectAllowed = 'move';
-                                }}
-                                className="p-3 bg-orange-50 border-2 border-orange-200 rounded-lg cursor-move hover:bg-orange-100 transition-colors"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <PauseIcon className="w-4 h-4 text-orange-600" />
-                                    <span className="text-sm font-medium">Condition</span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Branch based on conditions</p>
-                            </div>
-                            <div
-                                draggable
-                                onDragStart={(event) => {
-                                    event.dataTransfer.setData('application/reactflow', 'delay');
-                                    event.dataTransfer.effectAllowed = 'move';
-                                }}
-                                className="p-3 bg-purple-50 border-2 border-purple-200 rounded-lg cursor-move hover:bg-purple-100 transition-colors"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <ScheduleIcon className="w-4 h-4 text-purple-600" />
-                                    <span className="text-sm font-medium">Delay</span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Wait for specified time</p>
-                            </div>
+                            ))}
                         </div>
-                        <div className="p-4 border-t">
+                        <div className="p-2 border-t shrink-0">
                             {selectedNode && selectedNode.type !== 'start' && selectedNode.type !== 'end' && (
                                 <Button
                                     variant="outlined"
                                     color="error"
                                     onClick={deleteSelectedNode}
-                                    startIcon={<Trash2 size={16} />}
+                                    size="small"
                                     fullWidth
+                                    sx={{ fontSize: '0.65rem', py: 0.5, height: '24px' }}
+                                    startIcon={<Trash2 size={10} />}
                                 >
-                                    Delete Selected Step
+                                    Delete
                                 </Button>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* React Flow Canvas */}
-                <div className="flex-1 relative" ref={reactFlowWrapper}>
+                {/* ----- React Flow Canvas ----- */}
+                <div className="flex-1 relative min-w-0" ref={reactFlowWrapper}>
                     {!showSidebar && (
                         <button
                             onClick={() => setShowSidebar(true)}
-                            className="absolute top-4 left-4 z-10 p-2 bg-white rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+                            className="absolute top-2 left-2 z-10 p-1.5 bg-white rounded shadow hover:bg-gray-50 transition-colors"
+                            title="Show Sidebar"
                         >
-                            <Eye className="w-5 h-5" />
+                            <Eye className="w-4 h-4" />
                         </button>
                     )}
                     <ReactFlow
                         nodes={nodes}
+                        onNodeDragStop={onNodeDragStop}
                         edges={edges}
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
@@ -1196,7 +1252,7 @@ const AutomationEditor = () => {
                         fitView
                         snapToGrid
                         snapGrid={[15, 15]}
-                        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+                        defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
                         deleteKeyCode={['Delete', 'Backspace']}
                         onNodesDelete={(deletedNodes) => {
                             deletedNodes.forEach(node => {
@@ -1205,36 +1261,74 @@ const AutomationEditor = () => {
                                 }
                             });
                         }}
+                        sx={{
+                            '& .react-flow__node': {
+                                fontSize: '0.7rem',
+                                '& .react-flow__handle': { width: '7px', height: '7px' }
+                            },
+                            '& .react-flow__edge-text': { fontSize: '0.65rem', background: '#fff', padding: '2px 4px', borderRadius: '3px' },
+                            '& .react-flow__controls-button': { width: '24px', height: '24px', '& svg': { width: '12px', height: '12px' } },
+                            '& .react-flow__minimap': { '& svg': { fontSize: '8px' } }
+                        }}
                     >
-                        <Background variant="dots" gap={20} size={1} />
-                        <Controls />
-                        <MiniMap nodeColor={nodeColor} nodeStrokeWidth={3} zoomable pannable />
-
+                        <Background variant="dots" gap={20} size={0.5} />
+                        <Controls showInteractive={false} />
+                        <MiniMap
+                            nodeColor={nodeColor}
+                            nodeStrokeWidth={2}
+                            zoomable
+                            pannable
+                            style={{ width: '90px', height: '60px' }}
+                            maskColor="rgba(240, 240, 240, 0.6)"
+                        />
                     </ReactFlow>
                 </div>
             </div>
 
-            {/* Step Configuration Modal */}
+            {/* ========== STEP CONFIG MODAL (Full Overlay) ========== */}
             {showStepModal && (
-                <StepConfigPanel
-                    step={currentStepData}
-                    onSave={saveStepConfig}
-                    onClose={() => {
-                        setShowStepModal(false);
-                        setCurrentStepData(null);
-                        setCurrentNodeId(null);
-                    }}
-                />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="bg-white rounded-lg shadow-xl w-[95vw] max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="px-4 py-2.5 border-b flex justify-between items-center shrink-0">
+                            <h3 className="font-semibold text-sm">Configure Step</h3>
+                            <IconButton size="small" onClick={() => setShowStepModal(false)} sx={{ p: 0.5 }}>
+                                <X className="w-4 h-4" />
+                            </IconButton>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <StepConfigPanel
+                                step={currentStepData}
+                                onSave={saveStepConfig}
+                                onClose={() => {
+                                    setShowStepModal(false);
+                                    setCurrentStepData(null);
+                                    setCurrentNodeId(null);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
 };
 
 // Wrap with ReactFlowProvider
-const AutomationEditorWithProvider = () => (
-    <ReactFlowProvider>
-        <AutomationEditor />
-    </ReactFlowProvider>
-);
+const AutomationEditorWithProvider = ({
+    formData,
+    setFormData
+}) => {
+
+    return (
+        <>
+            <ReactFlowProvider>
+                <AutomationEditor
+                    formData={formData}
+                    setFormData={setFormData}
+                />
+            </ReactFlowProvider>
+        </>
+    );
+};
 
 export default AutomationEditorWithProvider;
