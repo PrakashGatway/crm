@@ -677,28 +677,76 @@ const MessageAutomationForm = () => {
         toast.success("New step added");
     };
 
-    const handleDeleteStep = (stepIndex) => {
-        if (formData.steps[stepIndex].type === "START" || formData.steps[stepIndex].type === "END") {
-            toast.error("Cannot delete Start or End steps");
-            return;
-        }
+   const handleDeleteStep = (
+    stepIndex
+) => {
 
-        const newSteps = formData.steps.filter((_, idx) => idx !== stepIndex);
-        // Renumber remaining action steps
-        let actionCounter = 1;
-        const renumberedSteps = newSteps.map(step => {
-            if (step.type === "ACTION") {
-                return { ...step, stepId: `a${actionCounter++}` };
-            }
-            return step;
-        });
+    const stepToDelete =
+        formData.steps[stepIndex];
 
-        setFormData({ ...formData, steps: renumberedSteps });
-        if (currentStepIndex >= stepIndex) {
-            setCurrentStepIndex(Math.max(1, currentStepIndex - 1));
-        }
-        toast.success("Step deleted");
-    };
+    if (
+        stepToDelete.type === "START" ||
+        stepToDelete.type === "END"
+    ) {
+
+        toast.error(
+            "Cannot delete Start or End steps"
+        );
+
+        return;
+
+    }
+
+    const deletedStepId =
+        stepToDelete.stepId;
+
+    // remove deleted step
+    const updatedSteps =
+        formData.steps
+
+            .filter(
+                (_, idx) =>
+                    idx !== stepIndex
+            )
+
+            // remove transitions
+            .map((step) => ({
+
+                ...step,
+
+                transitions:
+                    step.transitions?.filter(
+                        (transition) =>
+                            transition.nextStepId !==
+                            deletedStepId
+                    ) || [],
+
+            }));
+
+    setFormData({
+        ...formData,
+        steps: updatedSteps,
+    });
+
+    if (
+        currentStepIndex >=
+        stepIndex
+    ) {
+
+        setCurrentStepIndex(
+            Math.max(
+                1,
+                currentStepIndex - 1
+            )
+        );
+
+    }
+
+    toast.success(
+        "Step deleted"
+    );
+
+};
 
     const handleSaveAutomation = async () => {
         try {
