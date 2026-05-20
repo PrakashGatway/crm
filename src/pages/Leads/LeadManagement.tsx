@@ -20,6 +20,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import LeadDetailPage from "../LeadDetails";
 import SendMessageModal from "./SendMessage";
+import AutomationExecutionModal from "./automation";
 
 // const LeadStatuses = [
 //     'new',
@@ -103,6 +104,9 @@ export default function LeadManagement() {
   const { LeadStatus } = useAuth() as any;
   const navigate = useNavigate();
   const [showMessageModal, setShowMessageModal] = useState(false);
+
+  const [automationModalOpen, setAutomationModalOpen] = useState(false);
+  const [selectedLeadForAutomation, setSelectedLeadForAutomation] = useState(null);
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -820,13 +824,13 @@ export default function LeadManagement() {
               </button>
 
             </>}
-                      {user.role == "admin" &&    <button
-                onClick={() => setShowExcelUpload(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-full border border-indigo-600 bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-theme-xs hover:bg-indigo-700 hover:text-white lg:inline-flex lg:w-auto"
-              >
-                <Upload className="h-4 w-4" />
-                Upload Excel
-              </button>}
+            {user.role == "admin" && <button
+              onClick={() => setShowExcelUpload(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-indigo-600 bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-theme-xs hover:bg-indigo-700 hover:text-white lg:inline-flex lg:w-auto"
+            >
+              <Upload className="h-4 w-4" />
+              Upload Excel
+            </button>}
 
           </div>
         </div>
@@ -1002,13 +1006,13 @@ export default function LeadManagement() {
                         Assign<span className="m-0 p-0">
                           (New)</span>
                       </button>
-<button
-            onClick={() => setShowMessageModal(true)}
-            className="rounded bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700"
-        >
-            <SendIcon className="h-4 w-4 inline mr-1" />
-            Send Message
-        </button>
+                      <button
+                        onClick={() => setShowMessageModal(true)}
+                        className="rounded bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700"
+                      >
+                        <SendIcon className="h-4 w-4 inline mr-1" />
+                        Send Message
+                      </button>
 
 
 
@@ -1221,6 +1225,17 @@ export default function LeadManagement() {
                                 >
                                   <Trash2 className="h-5 w-5" />
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedLeadForAutomation(lead);
+                                    setAutomationModalOpen(true);
+                                  }}
+                                  className="p-1 rounded-lg text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300"
+                                  title="Run Automation"
+                                >
+                                  <Target className="h-5 w-5" />
+                                </button>
+                           
                               </>
                             )}
                           </div>
@@ -1299,6 +1314,16 @@ export default function LeadManagement() {
             </div>
           )}
         </div>
+
+             <AutomationExecutionModal
+                                  isOpen={automationModalOpen}
+                                  onClose={() => setAutomationModalOpen(false)}
+                                  leadId={selectedLeadForAutomation?._id}
+                                  leadName={selectedLeadForAutomation?.fullName}
+                                  onExecutionComplete={(result) => {
+                                    null
+                                  }}
+                                />
         {showAppliedFilters ? (
           <div className={`duration-300 ease-in-out h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-100 ${showAppliedFilters ? "block" : "hidden"}`}>
             <div className="p-2">
