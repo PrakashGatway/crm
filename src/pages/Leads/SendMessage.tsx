@@ -103,7 +103,7 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
         if (template) {
             setSelectedWhatsAppTemplate(templateId);
             setSelectedTemplateDetails(template);
-            
+
             // Extract parameters from template
             const bodyComponent = template.components.find(c => c.type === 'BODY');
             if (bodyComponent && bodyComponent.text) {
@@ -130,12 +130,12 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
 
     const renderParameterInputs = () => {
         if (!showParameterInput || !selectedTemplateDetails) return null;
-        
+
         const bodyComponent = selectedTemplateDetails.components.find(c => c.type === 'BODY');
         if (!bodyComponent) return null;
-        
+
         const placeholders = bodyComponent.text.match(/{{(\d+)}}/g) || [];
-        
+
         return (
             <div className="space-y-3 mt-4">
                 <Typography variant="subtitle2" className="font-semibold">
@@ -176,7 +176,7 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
             toast.error('No leads selected');
             return;
         }
-        
+
         if (activeTab === 0) {
             if (useEmailTemplate && !selectedEmailTemplate) {
                 toast.error('Please select an email template');
@@ -191,7 +191,7 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
                 toast.error('Please select a WhatsApp template');
                 return;
             }
-            
+
             // Validate template parameters
             if (showParameterInput) {
                 const missingParams = Object.values(templateParameters).some(v => !v.trim());
@@ -201,17 +201,17 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
                 }
             }
         }
-        
+
         const confirmMessage = `Send ${activeTab === 0 ? 'emails' : 'WhatsApp messages'} to ${selectedLeads.length} lead(s)?`;
         if (!window.confirm(confirmMessage)) return;
-        
+
         setLoading(true);
         setSendProgress({ current: 0, total: selectedLeads.length });
-        
+
         try {
             let content;
             let templateId;
-            
+
             if (activeTab === 0) {
                 if (useEmailTemplate) {
                     templateId = selectedEmailTemplate;
@@ -224,7 +224,7 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
                 // Pass parameters along with template
                 content = { parameters: templateParameters };
             }
-            
+
             const response = await api.post('/msg/send-bulk', {
                 type: activeTab === 0 ? 'email' : 'whatsapp',
                 leadIds: selectedLeads,
@@ -232,13 +232,13 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
                 batchSize: batchSize,
                 templateId: templateId
             });
-            
+
             const { results, summary } = response.data;
-            
+
             toast.success(
                 `Messages sent! Success: ${summary.success}, Failed: ${summary.failed}`
             );
-            
+
             if (onComplete) onComplete(results);
             onClose();
             resetForm();
@@ -266,7 +266,7 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
 
     const renderProgress = () => {
         if (sendProgress.total === 0) return null;
-        
+
         const percentage = (sendProgress.current / sendProgress.total) * 100;
         return (
             <div className="mt-4">
@@ -348,7 +348,7 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
                             <>
                                 <TextField
                                     fullWidth
-                                    sx={{marginBottom:1}}
+                                    sx={{ marginBottom: 1 }}
                                     label="Email Subject"
                                     value={emailSubject}
                                     onChange={(e) => setEmailSubject(e.target.value)}
@@ -397,9 +397,9 @@ export default function SendMessageModal({ isOpen, onClose, selectedLeads, onCom
                                     <MenuItem key={template._id} value={template.name}>
                                         <div className="flex justify-between w-full">
                                             <span>{template.name}</span>
-                                            <Chip 
-                                                label={template.category} 
-                                                size="small" 
+                                            <Chip
+                                                label={template.category}
+                                                size="small"
                                                 color={template.category === 'MARKETING' ? 'primary' : 'default'}
                                             />
                                         </div>

@@ -18,6 +18,7 @@ const getIcon = (name: string, size = 22) => {
   const props = { size: 24, color: "#5e2525", strokeWidth: 1.5 };
   switch (name) {
     case "Dashboard": return <LayoutDashboard {...props} />;
+    case "Chat": return <img className="w-8 h-8 object-cover" src="./whatsapp.png" alt="whatsapp" />;
     case "Daily Reports":
     case "Call Reports": return <FileText {...props} />;
     case "Users": return <Users {...props} />;
@@ -42,6 +43,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { name: "Dashboard", path: "/" },
   { name: "Daily Reports", path: "/lead-report" },
+  { name: "Chat", path: "/chat" },
   { name: "Users", path: "/users" },
   { name: "Leads", path: "/leads" },
   { name: "Emails", path: "/broadcast" },
@@ -60,11 +62,11 @@ const navItemsCoun: NavItem[] = [{ name: "Dashboard", path: "/" },
 const navItemsMan: NavItem[] = [
   { name: "Dashboard", path: "/" },
   { name: "Call Reports", path: "/lead-report" },
+  { name: "Chat", path: "/chat" },
   { name: "Leads", path: "/leads" },
   { name: "Emails", path: "/broadcast" },
   { name: "Whatsapp", path: "/whatsapp" },
   { name: "Setting", path: "/setting" }
-
 ];
 const navItemsTeacher: NavItem[] = [{ name: "Dashboard", path: "/" }];
 

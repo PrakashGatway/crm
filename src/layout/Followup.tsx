@@ -11,12 +11,8 @@ import {
     Calendar,
     Phone,
     User,
-    Clock,
     CheckCircle,
-    ChevronRight,
-    AlertCircle,
-    Loader2,
-    Volume2
+    Loader2
 } from "lucide-react";
 import { useNavigate } from "react-router";
 
@@ -26,7 +22,6 @@ export default function FollowUpBot() {
     const [followUps, setFollowUps] = useState([]);
     const [loading, setLoading] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [lastAlertTime, setLastAlertTime] = useState(null);
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
     const [processingIds, setProcessingIds] = useState(new Set());
@@ -79,11 +74,8 @@ export default function FollowUpBot() {
         }
     }, [user]);
 
-    // Show browser notification and toast alert
     const showFollowUpAlert = (count) => {
         const message = `You have ${count} follow-up${count > 1 ? 's' : ''} scheduled for today`;
-
-        // Show toast notification
         toast.info(message, {
             position: "top-right",
             autoClose: 5000,
@@ -170,7 +162,7 @@ export default function FollowUpBot() {
             )}
 
             {/* Follow-Up Bot Button */}
-            <div className="fixed bottom-6  right-6 z-50">
+            <div className="fixed bottom-10  right-12 z-50">
 
                 <button
                     onClick={handleOpenBot}
