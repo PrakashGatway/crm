@@ -31,6 +31,7 @@ import { motion } from 'framer-motion';
 import api from '../../axiosInstance';
 import { toast } from 'react-toastify';
 import TemplatePicker from './TemplatePicker';
+import { useNavigate } from 'react-router';
 
 
 const getStatusIcon = (status) => {
@@ -168,6 +169,7 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
     const [loadingMore, setLoadingMore] = useState(false);
     const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
+    const navigate = useNavigate();
 
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
@@ -662,7 +664,10 @@ const WhatsAppChat = ({ lead, onClose, onNewMessage }) => {
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
                 <MenuItem>
-                    <Typography variant="body2">View Lead Details</Typography>
+                    <Typography onClick={() => {
+                    setAnchorEl(null);
+                    navigate(`/leads?q=${lead?.phone10 || lead?.phone || ""}&name=${lead?.fullName || ""}&lead=${lead?._id}`)
+                }} variant="body2">View Lead Details</Typography>
                 </MenuItem>
                 <MenuItem>
                     <Typography variant="body2">Share Contact</Typography>

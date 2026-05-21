@@ -90,46 +90,113 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const newNotification = {
           id: lead.leadId,
           name: lead.name,
+          type: lead.type || "",
           message: lead.message || "lead notification",
           time: new Date(lead.createdAt).toISOString(),
         };
         return [newNotification, ...prevNotifications].slice(0, 10);
       });
 
-      toast.custom((t) => (
-        <div className="flex items-start gap-3 bg-white dark:bg-gray-900 shadow-xl  rounded-xl p-3 px-4 w-[420px] max-w-full border border-gray-300 dark:border-gray-700 animate-in slide-in-from-top">
+      toast.custom(
+        (t) => {
 
-          <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold">
-            {lead.name.charAt(0).toUpperCase()}
-          </div>
+          const isMessage = lead.type === "message";
 
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-              New Lead
-            </p>
-            <p className="text-xs text-gray-500">
-              {lead.message || "lead notification"}
-            </p>
-          </div>
-          <div>
-            <button
-              onClick={() => { toast.dismiss(t); navigate(`/leads`) }}
-              className="mt-2 text-sm font-semibold text-blue-600 hover:underline"
+          return (
+            <div
+              className={`
+          flex items-start gap-3 shadow-2xl rounded-2xl p-4 w-[420px] max-w-full border
+          animate-in slide-in-from-top duration-300
+          ${isMessage
+                  ? "bg-green-50 dark:bg-green-950 border-2 border-red-400 dark:border-green-800"
+                  : "bg-white dark:bg-gray-900 border-2 border-gray-400 dark:border-gray-700"
+                }
+        `}
             >
-              View
-            </button>
-          </div>
+              <div
+                className={`
+            w-10 h-10 rounded-full flex items-center justify-center
+            text-white font-bold text-sm shrink-0
+            ${isMessage ? "" : "bg-gray-700"}
+          `}
+              >
+                {isMessage ? <img src={"./whats.svg"} className="w-full h-full shadow-2xl object-cover" /> : lead.name?.charAt(0)?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className={`
+                text-sm font-semibold truncate
+                ${isMessage
+                        ? "text-green-800 dark:text-green-200"
+                        : "text-gray-900 dark:text-white"
+                      }
+              `}
+                  >
+                    {isMessage
+                      ? `${lead.name || "Unknown"} sent a message`
+                      : lead.type || "New Lead"}
+                  </p>
+                  <button
+                    onClick={() => toast.dismiss(t)}
+                    className="text-gray-500 hover:text-gray-700 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p
+                  className={`
+              text-xs mt-1 break-words
+              ${isMessage
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-gray-500"
+                    }
+            `}
+                >
+                  {lead.message || "Lead notification"}
+                </p>
+                <div className="flex items-center justify-between mt-1">
 
-          <button
-            onClick={() => toast.dismiss(t)}
-            className="text-gray-600 hover:text-gray-600 text-sm"
-          >
-            ✕
-          </button>
-        </div>
-      ), {
-        duration: 3000,
-      });
+                  {isMessage && (
+                    <span className="text-[11px] text-green-600 dark:text-green-400 font-medium">
+                      WhatsApp Message
+                    </span>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      toast.dismiss(t);
+
+                      if (isMessage) {
+                        navigate(`/leads?q=${lead?.phone10 || lead?.phone || ""}&name=${lead?.name || ""}&lead=${lead?.leadId}`)
+                      } else {
+                        navigate(`/leads`);
+                      }
+                    }}
+                    className={`
+                text-sm font-semibold hover:underline
+                ${isMessage
+                        ? "text-green-700 dark:text-green-300"
+                        : "text-blue-600"
+                      }
+              `}
+                  >
+                    {isMessage ? "Open Chat" : "View"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        },
+        {
+          duration: 5000,
+
+          position:
+            lead.type === "message"
+              ? "bottom-right"
+              : "top-right",
+        }
+      );
     });
 
     return () => {
