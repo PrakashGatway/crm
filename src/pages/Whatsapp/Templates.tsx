@@ -44,6 +44,7 @@ import {
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import api from '../../axiosInstance';
+import { useAuth } from '../../context/UserContext';
 
 interface WhatsAppTemplate {
     id?: string;
@@ -93,6 +94,7 @@ export default function WhatsAppTemplateList({
     const [viewDialogOpen, setViewDialogOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         total: 0,
         approved: 0,
@@ -110,7 +112,7 @@ export default function WhatsAppTemplateList({
             calculateStats(templateData);
         } catch (error) {
             console.error('Error loading templates:', error);
-            toast.error('Failed to load templates');
+            toast.error(error.message || 'Failed to load templates');
         } finally {
             setLoading(false);
         }
@@ -181,7 +183,7 @@ export default function WhatsAppTemplateList({
                 }
             } catch (error) {
                 console.error('Error deleting template:', error);
-                toast.error('Failed to delete template');
+                toast.error(error.message || 'Failed to delete template');
             }
         }
     };
@@ -321,7 +323,7 @@ export default function WhatsAppTemplateList({
                         >
                             <CardContent className="p-4 relative">
                                 <div className="flex justify-between items-start mt-3">
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-h-[200px]">
                                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                                             <Typography variant="subtitle1" className="font-semibold text-gray-800">
                                                 {template.label}
@@ -394,18 +396,26 @@ export default function WhatsAppTemplateList({
                                         </Tooltip>
                                     )}
 
-                                    <Tooltip title="Delete Template">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setSelectedTemplate(template);
-                                                setDeleteDialogOpen(true);
-                                            }}
-                                            className="text-gray-500 hover:text-red-600"
-                                        >
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
+                                    {(
+                                        user?.role === "admin" ||
+                                        template?.createdBy?._id === user?._id
+                                    ) && (
+                                            <Tooltip title="Delete Template">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setSelectedTemplate(template);
+                                                        setDeleteDialogOpen(true);
+                                                    }}
+                                                    className="text-gray-500 hover:text-red-600"
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                </div>
+                                <div className="absolute bottom-1 right-1 flex text-sm text-gray-600 justify-end gap-1">
+                                    By : {template.createdBy.role == 'admin' ? 'Admin' : template?.createdBy?.name} at {new Date(template.createdAt || '').toLocaleString()} <br />
                                 </div>
                             </CardContent>
                         </Card>

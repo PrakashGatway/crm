@@ -6,12 +6,15 @@ import WhatsAppTemplateList from './Templates';
 import WhatsAppBroadcast from './whatsappBroadcast';
 import AutomationList from '../Automation/Pipeline';
 import { useSearchParams } from 'react-router';
+import { useAuth } from '../../context/UserContext';
 
 type TabType = 'statuses' | 'leads' | 'emailEditor' | 'settings';
 
 export default function WhatsappPage() {
     const [searchParams, setSearchParams] =
         useSearchParams();
+
+    const { user } = useAuth();
 
     const queryTab =
         searchParams.get('tab') as TabType;
@@ -78,7 +81,7 @@ export default function WhatsappPage() {
             {/* ─── Animated Tabs with Framer Motion ─── */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-2 mb-6">
                 <div className="relative flex gap-1">
-                    {(["broadcast", "whatsapp", "templates", "automations"] as TabType[]).map((tab) => (
+                    {(user.role === "admin" ? ["broadcast", "whatsapp", "templates", "automations"] : ["broadcast", "whatsapp", "templates"]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}

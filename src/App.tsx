@@ -69,20 +69,18 @@ export default function App() {
               <Route path="/setting" element={<LeadStatusPage />} />
               <Route element={<ProtectedRoute roles={[ROLES.ADMIN]} />}>
                 <Route path="/users" element={<UserListPage />} />
+                {/* <Route path="/automations" element={<AutomationList />} /> */}
+                <Route path="/automations/create" element={<MessageAutomationForm />} />
+                <Route path="/automations/edit/:id" element={<MessageAutomationForm />} />
               </Route>
               <Route element={<ProtectedRoute roles={[ROLES.COUNSEL, ROLES.ADMIN, ROLES.MANAGER, ROLES.LEADER]} />}>
                 <Route path="/leads" element={<LeadManagement />} />
                 <Route path="/leads/:id" element={<LeadDetailPage />} />
-
                 <Route path="/leadsss" element={<LeadDetailPageM />} />
                 <Route path="/lead-report" element={<DailyReport />} />
                 <Route path="/broadcast" element={<EmailBroadcast />} />
                 <Route path="/whatsapp" element={<WhatsappPage />} />
                 <Route path="/chat" element={<ChatsPage />} />
-
-                <Route path="/automations" element={<AutomationList />} />
-                <Route path="/automations/create" element={<MessageAutomationForm />} />
-                <Route path="/automations/edit/:id" element={<MessageAutomationForm />} />
                 {/* <Route path="/auto/edit/:id" element={<AutomationEditor />} /> */}
               </Route>
               <Route path="*" element={<ComingSoon />} />
