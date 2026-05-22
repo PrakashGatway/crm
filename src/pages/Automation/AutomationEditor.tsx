@@ -685,12 +685,6 @@ const AutomationEditor = ({ formData,
     const reactFlowWrapper = useRef(null);
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
-    useEffect(() => {
-
-        console.log("LIVE DATA", formData);
-
-    }, [formData]);
-
    const onNodeDragStop = (event, node) => {
 
     const updatedSteps = formData.steps.map((step) => {

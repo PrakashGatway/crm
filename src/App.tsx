@@ -83,7 +83,7 @@ export default function App() {
                 <Route path="/automations" element={<AutomationList />} />
                 <Route path="/automations/create" element={<MessageAutomationForm />} />
                 <Route path="/automations/edit/:id" element={<MessageAutomationForm />} />
-                <Route path="/auto/edit/:id" element={<AutomationEditor />} />
+                {/* <Route path="/auto/edit/:id" element={<AutomationEditor />} /> */}
               </Route>
               <Route path="*" element={<ComingSoon />} />
             </Route>

@@ -56,10 +56,12 @@ import api, { automationAPI } from "../../axiosInstance";
 import { toast } from "react-toastify";
 import { CheckCircleIcon } from "lucide-react";
 import AutomationEditorWithProvider from "./AutomationEditor";
+import { useAuth } from "../../context/UserContext";
+import { LeadSources } from "../Leads/LeadManagement";
 
 
 // Action Type Components
-const ActionConfig = ({ action, onChange, onDelete, templates,pipelines }) => {
+const ActionConfig = ({ action, onChange, onDelete, templates, pipelines }) => {
     const getActionFields = () => {
         switch (action.type) {
             case "SEND_WHATSAPP":
@@ -473,6 +475,8 @@ const MessageAutomationForm = () => {
     const [templates, setTemplates] = useState([]);
     const [pipelines, setPipelines] = useState([]);
 
+    const { LeadStatus } = useAuth();
+
     // Form State
     const [formData, setFormData] = useState({
         name: "",
@@ -677,81 +681,102 @@ const MessageAutomationForm = () => {
         toast.success("New step added");
     };
 
-   const handleDeleteStep = (
-    stepIndex
-) => {
-
-    const stepToDelete =
-        formData.steps[stepIndex];
-
-    if (
-        stepToDelete.type === "START" ||
-        stepToDelete.type === "END"
-    ) {
-
-        toast.error(
-            "Cannot delete Start or End steps"
-        );
-
-        return;
-
-    }
-
-    const deletedStepId =
-        stepToDelete.stepId;
-
-    // remove deleted step
-    const updatedSteps =
-        formData.steps
-
-            .filter(
-                (_, idx) =>
-                    idx !== stepIndex
-            )
-
-            // remove transitions
-            .map((step) => ({
-
-                ...step,
-
-                transitions:
-                    step.transitions?.filter(
-                        (transition) =>
-                            transition.nextStepId !==
-                            deletedStepId
-                    ) || [],
-
-            }));
-
-    setFormData({
-        ...formData,
-        steps: updatedSteps,
-    });
-
-    if (
-        currentStepIndex >=
+    const handleDeleteStep = (
         stepIndex
-    ) {
+    ) => {
 
-        setCurrentStepIndex(
-            Math.max(
-                1,
-                currentStepIndex - 1
-            )
+        const stepToDelete =
+            formData.steps[stepIndex];
+
+        if (
+            stepToDelete.type === "START" ||
+            stepToDelete.type === "END"
+        ) {
+
+            toast.error(
+                "Cannot delete Start or End steps"
+            );
+
+            return;
+
+        }
+
+        const deletedStepId =
+            stepToDelete.stepId;
+
+        // remove deleted step
+        const updatedSteps =
+            formData.steps
+
+                .filter(
+                    (_, idx) =>
+                        idx !== stepIndex
+                )
+
+                // remove transitions
+                .map((step) => ({
+
+                    ...step,
+
+                    transitions:
+                        step.transitions?.filter(
+                            (transition) =>
+                                transition.nextStepId !==
+                                deletedStepId
+                        ) || [],
+
+                }));
+
+        setFormData({
+            ...formData,
+            steps: updatedSteps,
+        });
+
+        if (
+            currentStepIndex >=
+            stepIndex
+        ) {
+
+            setCurrentStepIndex(
+                Math.max(
+                    1,
+                    currentStepIndex - 1
+                )
+            );
+
+        }
+
+        toast.success(
+            "Step deleted"
         );
+    };
 
-    }
+    const getActualStartStepId = (steps, startStepId) => {
+        const validStart = steps.find(
+            (step) => step.stepId === startStepId
+        );
+        if (validStart) {
+            return startStepId;
+        }
+        const usedAsNext = new Set();
 
-    toast.success(
-        "Step deleted"
-    );
-
-};
+        steps.forEach((step) => {
+            (step.transitions || []).forEach((transition) => {
+                if (transition.nextStepId) {
+                    usedAsNext.add(transition.nextStepId);
+                }
+            });
+        });
+        const rootStep = steps.find(
+            (step) =>
+                !usedAsNext.has(step.stepId)
+        );
+        return rootStep?.stepId || null;
+    };
 
     const handleSaveAutomation = async () => {
         try {
             setLoading(true);
-
             // Validate all steps
             let hasErrors = false;
             const newErrors = {};
@@ -762,6 +787,9 @@ const MessageAutomationForm = () => {
                     hasErrors = true;
                 }
             });
+            let startStepId = getActualStartStepId(formData.steps, formData.startStepId);
+
+            formData.startStepId = startStepId;
 
             setValidationErrors(newErrors);
 
@@ -836,212 +864,163 @@ const MessageAutomationForm = () => {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 items-start">
-         <div className="w-full lg:max-w-none"> 
-            <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
-                {/* Header */}
-                <Box sx={{ p: 3, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="h6" fontWeight="bold" >
-                        {id ? "Edit Message Automation" : "Create Message Automation"}
-                    </Typography>
-                    <Typography variant="body3" color="textSecondary">
-                        Configure your marketing automation workflow with triggers, conditions, and actions
-                    </Typography>
-                </Box>
+            <div className="w-full lg:max-w-none">
+                <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+                    {/* Header */}
+                    <Box sx={{ p: 3, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="h6" fontWeight="bold" >
+                            {id ? "Edit Message Automation" : "Create Message Automation"}
+                        </Typography>
+                        <Typography variant="body3" color="textSecondary">
+                            Configure your marketing automation workflow with triggers, conditions, and actions
+                        </Typography>
+                    </Box>
 
-                {/* Stepper */}
-                <Box sx={{ px: 4, pt: 4 }}>
-                    <Stepper activeStep={activeStep} alternativeLabel>
-                        {steps.map((label) => (
-                            <Step key={label}>
-                                <StepLabel>{label}</StepLabel>
-                            </Step>
-                        ))}
-                    </Stepper>
-                </Box>
+                    {/* Stepper */}
+                    <Box sx={{ px: 4, pt: 4 }}>
+                        <Stepper activeStep={activeStep} alternativeLabel>
+                            {steps.map((label) => (
+                                <Step key={label}>
+                                    <StepLabel>{label}</StepLabel>
+                                </Step>
+                            ))}
+                        </Stepper>
+                    </Box>
 
-                <Divider sx={{ my: 4 }} />
+                    <Divider sx={{ my: 4 }} />
 
-                {/* Form Content */}
-                <Box sx={{ px: 4, pb: 4 }}>
-                    <AnimatePresence mode="wait">
-                        {activeStep === 0 && (
-                            <motion.div
-                                key="basic"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <Grid spacing={4} gap={3} >
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            sx={{ marginBottom: 2 }}
-                                            fullWidth
-                                            label="Automation Name"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            required
-                                            placeholder="e.g., Welcome Message, Payment Reminder, etc."
-                                            variant="outlined"
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            sx={{ marginBottom: 2 }}
-                                            multiline
-                                            label="Description"
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            multiline
-                                            rows={3}
-                                            placeholder="Describe what this automation does..."
-                                            variant="outlined"
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <FormControl fullWidth>
-                                            <InputLabel>Category</InputLabel>
-                                            <Select
+                    {/* Form Content */}
+                    <Box sx={{ px: 4, pb: 4 }}>
+                        <AnimatePresence mode="wait">
+                            {activeStep === 0 && (
+                                <motion.div
+                                    key="basic"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <Grid spacing={4} gap={3} >
+                                        <Grid item xs={12}>
+                                            <TextField
                                                 sx={{ marginBottom: 2 }}
-
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                label="Category"
-                                            >
-                                                <MenuItem value="LEAD_NURTURING">Lead Nurturing</MenuItem>
-                                                <MenuItem value="FOLLOW_UP">Follow Up</MenuItem>
-                                                <MenuItem value="ADMISSION">Admission</MenuItem>
-                                                <MenuItem value="PAYMENT">Payment</MenuItem>
-                                                <MenuItem value="VISA">Visa</MenuItem>
-                                                <MenuItem value="CUSTOM">Custom</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <FormControlLabel
-                                            control={
-                                                <Switch
-                                                    checked={formData.status === "ACTIVE"}
-                                                    onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            status: e.target.checked ? "ACTIVE" : "DRAFT",
-                                                        })
-                                                    }
-                                                />
-                                            }
-                                            label="Activate automation immediately"
-                                        />
-                                    </Grid>
-                                </Grid>
-                            </motion.div>
-                        )}
-                        {activeStep === 1 && (
-                            <motion.div
-                                key="trigger"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <Grid spacing={4}>
-                                    <Grid item xs={12}>
-                                        <FormControl fullWidth>
-                                            <InputLabel>Trigger Type</InputLabel>
-                                            <Select
+                                                fullWidth
+                                                size="small"
+                                                label="Automation Name"
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                required
+                                                placeholder="e.g., Welcome Message, Payment Reminder, etc."
+                                                variant="outlined"
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <TextField
+                                                fullWidth
                                                 sx={{ marginBottom: 2 }}
-                                                value={formData.trigger.type}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        trigger: { ...formData.trigger, type: e.target.value, filters: {} },
-                                                    })
-                                                }
-                                                label="Trigger Type"
-                                            >
-                                                {triggerTypes.map((type) => (
-                                                    <MenuItem key={type} value={type}>
-                                                        {type.replace(/_/g, " ")}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
+                                                multiline
+                                                size="small"
+                                                label="Description"
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                multiline
+                                                rows={3}
+                                                placeholder="Describe what this automation does..."
+                                                variant="outlined"
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <FormControl fullWidth>
+                                                <InputLabel>Category</InputLabel>
+                                                <Select
+                                                    sx={{ marginBottom: 2 }}
 
-                                    {formData.trigger.type === "SCHEDULED" && (
-                                        <>
-                                            <Grid item xs={12} md={6}>
-                                                <TextField
-                                                    fullWidth
-                                                    label="Cron Expression"
-                                                    value={formData.trigger.schedule?.cron || ""}
-                                                    onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            trigger: {
-                                                                ...formData.trigger,
-                                                                schedule: { ...formData.trigger.schedule, cron: e.target.value },
-                                                            },
-                                                        })
-                                                    }
-                                                    placeholder="0 9 * * * (Daily at 9 AM)"
-                                                    helperText="Format: Minute Hour Day Month DayOfWeek"
-                                                />
-                                            </Grid>
-                                            <Grid item xs={12} md={6}>
-                                                <FormControl fullWidth>
-                                                    <InputLabel>Timezone</InputLabel>
-                                                    <Select
-                                                        value={formData.trigger.schedule?.timezone || "UTC"}
+                                                    value={formData.category}
+                                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                    label="Category"
+                                                >
+                                                    <MenuItem value="LEAD_NURTURING">Lead Nurturing</MenuItem>
+                                                    <MenuItem value="FOLLOW_UP">Follow Up</MenuItem>
+                                                    <MenuItem value="ADMISSION">Admission</MenuItem>
+                                                    <MenuItem value="PAYMENT">Payment</MenuItem>
+                                                    <MenuItem value="VISA">Visa</MenuItem>
+                                                    <MenuItem value="CUSTOM">Custom</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <FormControlLabel
+                                                control={
+                                                    <Switch
+                                                        checked={formData.status === "ACTIVE"}
                                                         onChange={(e) =>
                                                             setFormData({
                                                                 ...formData,
-                                                                trigger: {
-                                                                    ...formData.trigger,
-                                                                    schedule: { ...formData.trigger.schedule, timezone: e.target.value },
-                                                                },
+                                                                status: e.target.checked ? "ACTIVE" : "DRAFT",
                                                             })
                                                         }
-                                                        label="Timezone"
-                                                    >
-                                                        <MenuItem value="UTC">UTC</MenuItem>
-                                                        <MenuItem value="America/New_York">America/New_York</MenuItem>
-                                                        <MenuItem value="Asia/Kolkata">Asia/Kolkata (IST)</MenuItem>
-                                                        <MenuItem value="Asia/Dubai">Asia/Dubai (GST)</MenuItem>
-                                                        <MenuItem value="Europe/London">Europe/London (GMT)</MenuItem>
-                                                        <MenuItem value="Europe/Berlin">Europe/Berlin (CET)</MenuItem>
-                                                        <MenuItem value="Australia/Sydney">Australia/Sydney (AEST)</MenuItem>
-                                                        <MenuItem value="Japan">Japan (JST)</MenuItem>
-                                                    </Select>
-                                                </FormControl>
-                                            </Grid>
-                                        </>
-                                    )}
+                                                    />
+                                                }
+                                                label="Activate automation immediately"
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </motion.div>
+                            )}
+                            {activeStep === 1 && (
+                                <motion.div
+                                    key="trigger"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <Grid spacing={4}>
+                                        <Grid item xs={12}>
+                                            <FormControl fullWidth>
+                                                <InputLabel>Trigger Type</InputLabel>
+                                                <Select
+                                                    size="small"
+                                                    sx={{ marginBottom: 2 }}
+                                                    value={formData.trigger.type}
+                                                    onChange={(e) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            trigger: { ...formData.trigger, type: e.target.value, filters: {} },
+                                                        })
+                                                    }
+                                                    label="Trigger Type"
+                                                >
+                                                    {triggerTypes.map((type) => (
+                                                        <MenuItem key={type} value={type}>
+                                                            {type.replace(/_/g, " ")}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </Grid>
 
-                                    {/* Filters Section - Show for all trigger types except MANUAL */}
-                                    {formData.trigger.type !== "MANUAL" && formData.trigger.type !== "API" && (
-                                        <Grid xs={12}>
-                                            <Card variant="outlined" sx={{ p: 3, bgcolor: alpha('#f5f5f5', 0.5) }}>
-                                                <Typography variant="subtitle1" fontWeight="bold">
-                                                    Filter Conditions
-                                                </Typography>
-                                                <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 3 }}>
-                                                    Apply filters to trigger this automation only for specific leads
-                                                </Typography>
+                                        {/* Filters Section - Show for all trigger types except MANUAL */}
+                                        {formData.trigger.type !== "MANUAL" && formData.trigger.type !== "API" && (
+                                            <Grid xs={12}>
+                                                <Card variant="outlined" sx={{ p: 3, bgcolor: alpha('#f5f5f5', 0.5) }}>
+                                                    <Typography variant="subtitle1" fontWeight="bold">
+                                                        Filter Conditions
+                                                    </Typography>
+                                                    <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 3 }}>
+                                                        Apply filters to trigger this automation only for specific leads
+                                                    </Typography>
 
-                                                <Stack spacing={3}>
-                                                    {/* Country Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Country
-                                                        </Typography>
-                                                        <div className="flex w-full gap-2">
-                                                            <div className="w-full">
+                                                    <Stack spacing={3}>
+                                                        <Box>
+                                                            <Typography variant="subtitle2" gutterBottom>
+                                                                Lead Status
+                                                            </Typography>
+                                                            <div className="flex w-full gap-2">
                                                                 <FormControl fullWidth size="small">
-                                                                    <InputLabel>Country Filter Type</InputLabel>
+                                                                    <InputLabel>Status Filter Type</InputLabel>
                                                                     <Select
-                                                                        value={formData.trigger.filters?.countryOperator || "IN"}
+                                                                        value={formData.trigger.filters?.statusOperator || "IN"}
                                                                         onChange={(e) =>
                                                                             setFormData({
                                                                                 ...formData,
@@ -1049,25 +1028,22 @@ const MessageAutomationForm = () => {
                                                                                     ...formData.trigger,
                                                                                     filters: {
                                                                                         ...formData.trigger.filters,
-                                                                                        countryOperator: e.target.value,
+                                                                                        statusOperator: e.target.value,
                                                                                     },
                                                                                 },
                                                                             })
                                                                         }
-                                                                        label="Country Filter Type"
+                                                                        label="Status Filter Type"
                                                                     >
-                                                                        <MenuItem value="IN">Included Countries</MenuItem>
-                                                                        <MenuItem value="NOT_IN">Excluded Countries</MenuItem>
+                                                                        <MenuItem value="IN">Include Statuses</MenuItem>
+                                                                        <MenuItem value="NOT_IN">Exclude Statuses</MenuItem>
                                                                     </Select>
                                                                 </FormControl>
-                                                            </div>
-                                                            <div className="w-full">
-
                                                                 <FormControl fullWidth size="small">
-                                                                    <InputLabel>Select Countries</InputLabel>
+                                                                    <InputLabel>Select Statuses</InputLabel>
                                                                     <Select
                                                                         multiple
-                                                                        value={formData.trigger.filters?.countries || []}
+                                                                        value={formData.trigger.filters?.statuses || []}
                                                                         onChange={(e) =>
                                                                             setFormData({
                                                                                 ...formData,
@@ -1075,12 +1051,12 @@ const MessageAutomationForm = () => {
                                                                                     ...formData.trigger,
                                                                                     filters: {
                                                                                         ...formData.trigger.filters,
-                                                                                        countries: e.target.value,
+                                                                                        statuses: e.target.value,
                                                                                     },
                                                                                 },
                                                                             })
                                                                         }
-                                                                        label="Select Countries"
+                                                                        label="Select Statuses"
                                                                         renderValue={(selected) => (
                                                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                                                                 {selected.map((value) => (
@@ -1089,390 +1065,319 @@ const MessageAutomationForm = () => {
                                                                             </Box>
                                                                         )}
                                                                     >
-                                                                        {false && countries?.map((country) => (
-                                                                            <MenuItem key={country.code} value={country.code}>
-                                                                                <Checkbox checked={(formData.trigger.filters?.countries || []).indexOf(country.code) > -1} />
-                                                                                <ListItemText primary={`${country.flag} ${country.name}`} />
-                                                                            </MenuItem>
-                                                                        ))}
+                                                                        {LeadStatus &&
+                                                                            Object.entries(LeadStatus).map(([value, label]) => (
+                                                                                <MenuItem key={value} value={value}>
+                                                                                    <Checkbox
+                                                                                        checked={
+                                                                                            (formData.trigger.filters?.statuses || []).indexOf(value) > -1
+                                                                                        }
+                                                                                    />
+                                                                                    <ListItemText primary={label} />
+                                                                                </MenuItem>
+                                                                            ))}
                                                                     </Select>
                                                                 </FormControl>
                                                             </div>
-                                                        </div>
-                                                    </Box>
+                                                        </Box>
 
-                                                    {/* Lead Status Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Lead Status
-                                                        </Typography>
-                                                        <div className="flex w-full gap-2">
-                                                            <FormControl fullWidth size="small">
-                                                                <InputLabel>Status Filter Type</InputLabel>
-                                                                <Select
-                                                                    value={formData.trigger.filters?.statusOperator || "IN"}
-                                                                    onChange={(e) =>
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            trigger: {
-                                                                                ...formData.trigger,
-                                                                                filters: {
-                                                                                    ...formData.trigger.filters,
-                                                                                    statusOperator: e.target.value,
-                                                                                },
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    label="Status Filter Type"
-                                                                >
-                                                                    <MenuItem value="IN">Include Statuses</MenuItem>
-                                                                    <MenuItem value="NOT_IN">Exclude Statuses</MenuItem>
-                                                                </Select>
-                                                            </FormControl>
-                                                            <FormControl fullWidth size="small">
-                                                                <InputLabel>Select Statuses</InputLabel>
-                                                                <Select
-                                                                    multiple
-                                                                    value={formData.trigger.filters?.statuses || []}
-                                                                    onChange={(e) =>
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            trigger: {
-                                                                                ...formData.trigger,
-                                                                                filters: {
-                                                                                    ...formData.trigger.filters,
-                                                                                    statuses: e.target.value,
-                                                                                },
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    label="Select Statuses"
-                                                                    renderValue={(selected) => (
-                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                                            {selected.map((value) => (
-                                                                                <Chip key={value} label={value} size="small" />
-                                                                            ))}
-                                                                        </Box>
-                                                                    )}
-                                                                >
-                                                                    {false && leadStatuses.map((status) => (
-                                                                        <MenuItem key={status.value} value={status.value}>
-                                                                            <Checkbox checked={(formData.trigger.filters?.statuses || []).indexOf(status.value) > -1} />
-                                                                            <ListItemText primary={status.label} />
-                                                                            <Chip label={status.count} size="small" variant="outlined" />
-                                                                        </MenuItem>
-                                                                    ))}
-                                                                </Select>
-                                                            </FormControl>
-                                                        </div>
-                                                    </Box>
-
-                                                    {/* Lead Source Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Lead Source
-                                                        </Typography>
-                                                        <div className="flex w-full gap-2">
-                                                            <FormControl fullWidth size="small">
-                                                                <InputLabel>Source Filter Type</InputLabel>
-                                                                <Select
-                                                                    value={formData.trigger.filters?.sourceOperator || "IN"}
-                                                                    onChange={(e) =>
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            trigger: {
-                                                                                ...formData.trigger,
-                                                                                filters: {
-                                                                                    ...formData.trigger.filters,
-                                                                                    sourceOperator: e.target.value,
-                                                                                },
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    label="Source Filter Type"
-                                                                >
-                                                                    <MenuItem value="IN">Include Sources</MenuItem>
-                                                                    <MenuItem value="NOT_IN">Exclude Sources</MenuItem>
-                                                                </Select>
-                                                            </FormControl>
-                                                            <FormControl fullWidth size="small">
-                                                                <InputLabel>Select Sources</InputLabel>
-                                                                <Select
-                                                                    multiple
-                                                                    value={formData.trigger.filters?.sources || []}
-                                                                    onChange={(e) =>
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            trigger: {
-                                                                                ...formData.trigger,
-                                                                                filters: {
-                                                                                    ...formData.trigger.filters,
-                                                                                    sources: e.target.value,
-                                                                                },
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    label="Select Sources"
-                                                                    renderValue={(selected) => (
-                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                                            {selected.map((value) => (
-                                                                                <Chip key={value} label={value} size="small" />
-                                                                            ))}
-                                                                        </Box>
-                                                                    )}
-                                                                >
-                                                                    {false && leadSources.map((source) => (
-                                                                        <MenuItem key={source.value} value={source.value}>
-                                                                            <Checkbox checked={(formData.trigger.filters?.sources || []).indexOf(source.value) > -1} />
-                                                                            <ListItemText primary={source.label} />
-                                                                            <Chip label={source.count} size="small" variant="outlined" />
-                                                                        </MenuItem>
-                                                                    ))}
-                                                                </Select>
-                                                            </FormControl>
-                                                        </div>
-                                                    </Box>
-
-                                                    {/* Score Range Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Lead Score Range
-                                                        </Typography>
-                                                        <div className="flex w-full gap-2">
-                                                            <TextField
-                                                                fullWidth
-                                                                type="number"
-                                                                label="Minimum Score"
-                                                                size="small"
-                                                                value={formData.trigger.filters?.minScore || ""}
-                                                                onChange={(e) =>
-                                                                    setFormData({
-                                                                        ...formData,
-                                                                        trigger: {
-                                                                            ...formData.trigger,
-                                                                            filters: {
-                                                                                ...formData.trigger.filters,
-                                                                                minScore: e.target.value ? parseInt(e.target.value) : null,
-                                                                            },
-                                                                        },
-                                                                    })
-                                                                }
-                                                                InputProps={{ inputProps: { min: 0, max: 100 } }}
-                                                            />
-                                                            <TextField
-                                                                fullWidth
-                                                                type="number"
-                                                                label="Maximum Score"
-                                                                size="small"
-                                                                value={formData.trigger.filters?.maxScore || ""}
-                                                                onChange={(e) =>
-                                                                    setFormData({
-                                                                        ...formData,
-                                                                        trigger: {
-                                                                            ...formData.trigger,
-                                                                            filters: {
-                                                                                ...formData.trigger.filters,
-                                                                                maxScore: e.target.value ? parseInt(e.target.value) : null,
-                                                                            },
-                                                                        },
-                                                                    })
-                                                                }
-                                                                InputProps={{ inputProps: { min: 0, max: 100 } }}
-                                                            />
-                                                        </div>
-                                                    </Box>
-
-                                                    {/* Date Range Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Lead Creation Date
-                                                        </Typography>
-                                                        <div className="flex w-full gap-2">
-                                                            <TextField
-                                                                fullWidth
-                                                                type="date"
-                                                                label="From Date"
-                                                                size="small"
-                                                                value={formData.trigger.filters?.createdFrom || ""}
-                                                                onChange={(e) =>
-                                                                    setFormData({
-                                                                        ...formData,
-                                                                        trigger: {
-                                                                            ...formData.trigger,
-                                                                            filters: {
-                                                                                ...formData.trigger.filters,
-                                                                                createdFrom: e.target.value,
-                                                                            },
-                                                                        },
-                                                                    })
-                                                                }
-                                                                InputLabelProps={{ shrink: true }}
-                                                            />
-
-                                                            <TextField
-                                                                fullWidth
-                                                                type="date"
-                                                                label="To Date"
-                                                                size="small"
-                                                                value={formData.trigger.filters?.createdTo || ""}
-                                                                onChange={(e) =>
-                                                                    setFormData({
-                                                                        ...formData,
-                                                                        trigger: {
-                                                                            ...formData.trigger,
-                                                                            filters: {
-                                                                                ...formData.trigger.filters,
-                                                                                createdTo: e.target.value,
-                                                                            },
-                                                                        },
-                                                                    })
-                                                                }
-                                                                InputLabelProps={{ shrink: true }}
-                                                            />
-                                                        </div>
-                                                    </Box>
-
-                                                    {/* Tags Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Tags
-                                                        </Typography>
-                                                        <div className="flex w-full gap-2">
-
-                                                            <FormControl fullWidth size="small">
-                                                                <InputLabel>Tags Filter Type</InputLabel>
-                                                                <Select
-                                                                    value={formData.trigger.filters?.tagsOperator || "HAS_ANY"}
-                                                                    onChange={(e) =>
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            trigger: {
-                                                                                ...formData.trigger,
-                                                                                filters: {
-                                                                                    ...formData.trigger.filters,
-                                                                                    tagsOperator: e.target.value,
-                                                                                },
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    label="Tags Filter Type"
-                                                                >
-                                                                    <MenuItem value="HAS_ANY">Has Any Of These Tags</MenuItem>
-                                                                    <MenuItem value="HAS_ALL">Has All Of These Tags</MenuItem>
-                                                                    <MenuItem value="NOT_HAS">Does Not Have Tags</MenuItem>
-                                                                </Select>
-                                                            </FormControl>
-                                                            <FormControl fullWidth size="small">
-                                                                <InputLabel>Select Tags</InputLabel>
-                                                                <Select
-                                                                    multiple
-                                                                    value={formData.trigger.filters?.tags || []}
-                                                                    onChange={(e) =>
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            trigger: {
-                                                                                ...formData.trigger,
-                                                                                filters: {
-                                                                                    ...formData.trigger.filters,
-                                                                                    tags: e.target.value,
-                                                                                },
-                                                                            },
-                                                                        })
-                                                                    }
-                                                                    label="Select Tags"
-                                                                    renderValue={(selected) => (
-                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                                                                            {selected.map((value) => (
-                                                                                <Chip key={value} label={value} size="small" />
-                                                                            ))}
-                                                                        </Box>
-                                                                    )}
-                                                                >
-                                                                    <MenuItem value="hot_lead">
-                                                                        <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("hot_lead") > -1} />
-                                                                        <ListItemText primary="🔥 Hot Lead" />
-                                                                    </MenuItem>
-                                                                    <MenuItem value="warm_lead">
-                                                                        <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("warm_lead") > -1} />
-                                                                        <ListItemText primary="⭐ Warm Lead" />
-                                                                    </MenuItem>
-                                                                    <MenuItem value="cold_lead">
-                                                                        <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("cold_lead") > -1} />
-                                                                        <ListItemText primary="❄️ Cold Lead" />
-                                                                    </MenuItem>
-                                                                    <MenuItem value="interested">
-                                                                        <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("interested") > -1} />
-                                                                        <ListItemText primary="💡 Interested" />
-                                                                    </MenuItem>
-                                                                    <MenuItem value="not_interested">
-                                                                        <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("not_interested") > -1} />
-                                                                        <ListItemText primary="🚫 Not Interested" />
-                                                                    </MenuItem>
-                                                                    <MenuItem value="follow_up">
-                                                                        <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("follow_up") > -1} />
-                                                                        <ListItemText primary="📞 Follow Up Required" />
-                                                                    </MenuItem>
-                                                                </Select>
-                                                            </FormControl>
-                                                        </div>
-                                                    </Box>
-
-                                                    {/* Custom Fields Filter */}
-                                                    <Box>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Custom Fields
-                                                        </Typography>
-                                                        <Button
-                                                            size="small"
-                                                            startIcon={<AddIcon />}
-                                                            onClick={() => {
-                                                                const customFields = [...(formData.trigger.filters?.customFields || [])];
-                                                                customFields.push({ field: "", operator: "EQUALS", value: "" });
-                                                                setFormData({
-                                                                    ...formData,
-                                                                    trigger: {
-                                                                        ...formData.trigger,
-                                                                        filters: {
-                                                                            ...formData.trigger.filters,
-                                                                            customFields,
-                                                                        },
-                                                                    },
-                                                                });
-                                                            }}
-                                                            sx={{ mb: 2 }}
-                                                        >
-                                                            Add Custom Field Filter
-                                                        </Button>
-
-                                                        {(formData.trigger.filters?.customFields || []).map((field, idx) => (
-                                                            <Card key={idx} variant="outlined" sx={{ p: 2, mb: 2 }}>
-                                                                <Stack direction="row" spacing={2} alignItems="center">
-                                                                    <TextField
-                                                                        size="small"
-                                                                        placeholder="Field Name"
-                                                                        value={field.field}
-                                                                        onChange={(e) => {
-                                                                            const newFields = [...(formData.trigger.filters?.customFields || [])];
-                                                                            newFields[idx].field = e.target.value;
+                                                        {/* Lead Source Filter */}
+                                                        <Box>
+                                                            <Typography variant="subtitle2" gutterBottom>
+                                                                Lead Source
+                                                            </Typography>
+                                                            <div className="flex w-full gap-2">
+                                                                <FormControl fullWidth size="small">
+                                                                    <InputLabel>Source Filter Type</InputLabel>
+                                                                    <Select
+                                                                        value={formData.trigger.filters?.sourceOperator || "IN"}
+                                                                        onChange={(e) =>
                                                                             setFormData({
                                                                                 ...formData,
                                                                                 trigger: {
                                                                                     ...formData.trigger,
                                                                                     filters: {
                                                                                         ...formData.trigger.filters,
-                                                                                        customFields: newFields,
+                                                                                        sourceOperator: e.target.value,
                                                                                     },
                                                                                 },
-                                                                            });
-                                                                        }}
-                                                                        sx={{ flex: 1 }}
-                                                                    />
-                                                                    <FormControl size="small" sx={{ flex: 1 }}>
-                                                                        <Select
-                                                                            value={field.operator}
+                                                                            })
+                                                                        }
+                                                                        label="Source Filter Type"
+                                                                    >
+                                                                        <MenuItem value="IN">Include Sources</MenuItem>
+                                                                        <MenuItem value="NOT_IN">Exclude Sources</MenuItem>
+                                                                    </Select>
+                                                                </FormControl>
+                                                                <FormControl fullWidth size="small">
+                                                                    <InputLabel>Select Sources</InputLabel>
+                                                                    <Select
+                                                                        multiple
+                                                                        value={formData.trigger.filters?.sources || []}
+                                                                        onChange={(e) =>
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                trigger: {
+                                                                                    ...formData.trigger,
+                                                                                    filters: {
+                                                                                        ...formData.trigger.filters,
+                                                                                        sources: e.target.value,
+                                                                                    },
+                                                                                },
+                                                                            })
+                                                                        }
+                                                                        label="Select Sources"
+                                                                        renderValue={(selected) => (
+                                                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                                                {selected.map((value) => (
+                                                                                    <Chip key={value} label={value} size="small" />
+                                                                                ))}
+                                                                            </Box>
+                                                                        )}
+                                                                    >
+                                                                        {LeadSources && LeadSources.map((source) => (
+                                                                            <MenuItem key={source} value={source}>
+                                                                                <Checkbox checked={(formData.trigger.filters?.sources || []).indexOf(source) > -1} />
+                                                                                <ListItemText primary={source} />
+                                                                            </MenuItem>
+                                                                        ))}
+                                                                    </Select>
+                                                                </FormControl>
+                                                            </div>
+                                                        </Box>
+                                                        <Box>
+                                                            <Typography variant="subtitle2" gutterBottom>
+                                                                Lead Creation Date
+                                                            </Typography>
+                                                            <div className="flex w-full gap-2">
+                                                                <TextField
+                                                                    fullWidth
+                                                                    type="date"
+                                                                    label="From Date"
+                                                                    size="small"
+                                                                    value={formData.trigger.filters?.createdFrom || ""}
+                                                                    onChange={(e) =>
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            trigger: {
+                                                                                ...formData.trigger,
+                                                                                filters: {
+                                                                                    ...formData.trigger.filters,
+                                                                                    createdFrom: e.target.value,
+                                                                                },
+                                                                            },
+                                                                        })
+                                                                    }
+                                                                    InputLabelProps={{ shrink: true }}
+                                                                />
+
+                                                                <TextField
+                                                                    fullWidth
+                                                                    type="date"
+                                                                    label="To Date"
+                                                                    size="small"
+                                                                    value={formData.trigger.filters?.createdTo || ""}
+                                                                    onChange={(e) =>
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            trigger: {
+                                                                                ...formData.trigger,
+                                                                                filters: {
+                                                                                    ...formData.trigger.filters,
+                                                                                    createdTo: e.target.value,
+                                                                                },
+                                                                            },
+                                                                        })
+                                                                    }
+                                                                    InputLabelProps={{ shrink: true }}
+                                                                />
+                                                            </div>
+                                                        </Box>
+
+                                                        {/* Tags Filter */}
+                                                        <Box>
+                                                            <Typography variant="subtitle2" gutterBottom>
+                                                                Tags
+                                                            </Typography>
+                                                            <div className="flex w-full gap-2">
+
+                                                                <FormControl fullWidth size="small">
+                                                                    <InputLabel>Tags Filter Type</InputLabel>
+                                                                    <Select
+                                                                        value={formData.trigger.filters?.tagsOperator || "HAS_ANY"}
+                                                                        onChange={(e) =>
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                trigger: {
+                                                                                    ...formData.trigger,
+                                                                                    filters: {
+                                                                                        ...formData.trigger.filters,
+                                                                                        tagsOperator: e.target.value,
+                                                                                    },
+                                                                                },
+                                                                            })
+                                                                        }
+                                                                        label="Tags Filter Type"
+                                                                    >
+                                                                        <MenuItem value="HAS_ANY">Has Any Of These Tags</MenuItem>
+                                                                        <MenuItem value="HAS_ALL">Has All Of These Tags</MenuItem>
+                                                                        <MenuItem value="NOT_HAS">Does Not Have Tags</MenuItem>
+                                                                    </Select>
+                                                                </FormControl>
+                                                                <FormControl fullWidth size="small">
+                                                                    <InputLabel>Select Tags</InputLabel>
+                                                                    <Select
+                                                                        multiple
+                                                                        value={formData.trigger.filters?.tags || []}
+                                                                        onChange={(e) =>
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                trigger: {
+                                                                                    ...formData.trigger,
+                                                                                    filters: {
+                                                                                        ...formData.trigger.filters,
+                                                                                        tags: e.target.value,
+                                                                                    },
+                                                                                },
+                                                                            })
+                                                                        }
+                                                                        label="Select Tags"
+                                                                        renderValue={(selected) => (
+                                                                            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
+                                                                                {selected.map((value) => (
+                                                                                    <Chip key={value} label={value} size="small" />
+                                                                                ))}
+                                                                            </Box>
+                                                                        )}
+                                                                    >
+                                                                        <MenuItem value="hot_lead">
+                                                                            <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("hot_lead") > -1} />
+                                                                            <ListItemText primary="🔥 Hot Lead" />
+                                                                        </MenuItem>
+                                                                        <MenuItem value="warm_lead">
+                                                                            <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("warm_lead") > -1} />
+                                                                            <ListItemText primary="⭐ Warm Lead" />
+                                                                        </MenuItem>
+                                                                        <MenuItem value="cold_lead">
+                                                                            <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("cold_lead") > -1} />
+                                                                            <ListItemText primary="❄️ Cold Lead" />
+                                                                        </MenuItem>
+                                                                        <MenuItem value="interested">
+                                                                            <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("interested") > -1} />
+                                                                            <ListItemText primary="💡 Interested" />
+                                                                        </MenuItem>
+                                                                        <MenuItem value="not_interested">
+                                                                            <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("not_interested") > -1} />
+                                                                            <ListItemText primary="🚫 Not Interested" />
+                                                                        </MenuItem>
+                                                                        <MenuItem value="follow_up">
+                                                                            <Checkbox checked={(formData.trigger.filters?.tags || []).indexOf("follow_up") > -1} />
+                                                                            <ListItemText primary="📞 Follow Up Required" />
+                                                                        </MenuItem>
+                                                                    </Select>
+                                                                </FormControl>
+                                                            </div>
+                                                        </Box>
+
+                                                        {/* Custom Fields Filter */}
+                                                        <Box>
+                                                            <Typography variant="subtitle2" gutterBottom>
+                                                                Custom Fields
+                                                            </Typography>
+                                                            <Button
+                                                                size="small"
+                                                                startIcon={<AddIcon />}
+                                                                onClick={() => {
+                                                                    const customFields = [...(formData.trigger.filters?.customFields || [])];
+                                                                    customFields.push({ field: "", operator: "EQUALS", value: "" });
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        trigger: {
+                                                                            ...formData.trigger,
+                                                                            filters: {
+                                                                                ...formData.trigger.filters,
+                                                                                customFields,
+                                                                            },
+                                                                        },
+                                                                    });
+                                                                }}
+                                                                sx={{ mb: 2 }}
+                                                            >
+                                                                Add Custom Field Filter
+                                                            </Button>
+
+                                                            {(formData.trigger.filters?.customFields || []).map((field, idx) => (
+                                                                <Card key={idx} variant="outlined" sx={{ p: 2, mb: 2 }}>
+                                                                    <Stack direction="row" spacing={2} alignItems="center">
+                                                                        <TextField
+                                                                            size="small"
+                                                                            placeholder="Field Name"
+                                                                            value={field.field}
                                                                             onChange={(e) => {
                                                                                 const newFields = [...(formData.trigger.filters?.customFields || [])];
-                                                                                newFields[idx].operator = e.target.value;
+                                                                                newFields[idx].field = e.target.value;
+                                                                                setFormData({
+                                                                                    ...formData,
+                                                                                    trigger: {
+                                                                                        ...formData.trigger,
+                                                                                        filters: {
+                                                                                            ...formData.trigger.filters,
+                                                                                            customFields: newFields,
+                                                                                        },
+                                                                                    },
+                                                                                });
+                                                                            }}
+                                                                            sx={{ flex: 1 }}
+                                                                        />
+                                                                        <FormControl size="small" sx={{ flex: 1 }}>
+                                                                            <Select
+                                                                                value={field.operator}
+                                                                                onChange={(e) => {
+                                                                                    const newFields = [...(formData.trigger.filters?.customFields || [])];
+                                                                                    newFields[idx].operator = e.target.value;
+                                                                                    setFormData({
+                                                                                        ...formData,
+                                                                                        trigger: {
+                                                                                            ...formData.trigger,
+                                                                                            filters: {
+                                                                                                ...formData.trigger.filters,
+                                                                                                customFields: newFields,
+                                                                                            },
+                                                                                        },
+                                                                                    });
+                                                                                }}
+                                                                            >
+                                                                                <MenuItem value="EQUALS">Equals</MenuItem>
+                                                                                <MenuItem value="NOT_EQUALS">Not Equals</MenuItem>
+                                                                                <MenuItem value="CONTAINS">Contains</MenuItem>
+                                                                                <MenuItem value="GREATER_THAN">Greater Than</MenuItem>
+                                                                                <MenuItem value="LESS_THAN">Less Than</MenuItem>
+                                                                            </Select>
+                                                                        </FormControl>
+                                                                        <TextField
+                                                                            size="small"
+                                                                            placeholder="Value"
+                                                                            value={field.value}
+                                                                            onChange={(e) => {
+                                                                                const newFields = [...(formData.trigger.filters?.customFields || [])];
+                                                                                newFields[idx].value = e.target.value;
+                                                                                setFormData({
+                                                                                    ...formData,
+                                                                                    trigger: {
+                                                                                        ...formData.trigger,
+                                                                                        filters: {
+                                                                                            ...formData.trigger.filters,
+                                                                                            customFields: newFields,
+                                                                                        },
+                                                                                    },
+                                                                                });
+                                                                            }}
+                                                                            sx={{ flex: 1 }}
+                                                                        />
+                                                                        <IconButton
+                                                                            size="small"
+                                                                            onClick={() => {
+                                                                                const newFields = (formData.trigger.filters?.customFields || []).filter((_, i) => i !== idx);
                                                                                 setFormData({
                                                                                     ...formData,
                                                                                     trigger: {
@@ -1485,540 +1390,497 @@ const MessageAutomationForm = () => {
                                                                                 });
                                                                             }}
                                                                         >
-                                                                            <MenuItem value="EQUALS">Equals</MenuItem>
-                                                                            <MenuItem value="NOT_EQUALS">Not Equals</MenuItem>
-                                                                            <MenuItem value="CONTAINS">Contains</MenuItem>
-                                                                            <MenuItem value="GREATER_THAN">Greater Than</MenuItem>
-                                                                            <MenuItem value="LESS_THAN">Less Than</MenuItem>
-                                                                        </Select>
-                                                                    </FormControl>
-                                                                    <TextField
-                                                                        size="small"
-                                                                        placeholder="Value"
-                                                                        value={field.value}
-                                                                        onChange={(e) => {
-                                                                            const newFields = [...(formData.trigger.filters?.customFields || [])];
-                                                                            newFields[idx].value = e.target.value;
-                                                                            setFormData({
-                                                                                ...formData,
-                                                                                trigger: {
-                                                                                    ...formData.trigger,
-                                                                                    filters: {
-                                                                                        ...formData.trigger.filters,
-                                                                                        customFields: newFields,
-                                                                                    },
-                                                                                },
-                                                                            });
-                                                                        }}
-                                                                        sx={{ flex: 1 }}
-                                                                    />
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => {
-                                                                            const newFields = (formData.trigger.filters?.customFields || []).filter((_, i) => i !== idx);
-                                                                            setFormData({
-                                                                                ...formData,
-                                                                                trigger: {
-                                                                                    ...formData.trigger,
-                                                                                    filters: {
-                                                                                        ...formData.trigger.filters,
-                                                                                        customFields: newFields,
-                                                                                    },
-                                                                                },
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        <DeleteIcon fontSize="small" />
-                                                                    </IconButton>
-                                                                </Stack>
-                                                            </Card>
-                                                        ))}
-                                                    </Box>
+                                                                            <DeleteIcon fontSize="small" />
+                                                                        </IconButton>
+                                                                    </Stack>
+                                                                </Card>
+                                                            ))}
+                                                        </Box>
 
-                                                    {/* Reset Filters Button */}
-                                                    <Box display="flex" justifyContent="flex-end">
-                                                        <Button
-                                                            size="small"
-                                                            onClick={() => {
-                                                                setFormData({
-                                                                    ...formData,
-                                                                    trigger: {
-                                                                        ...formData.trigger,
-                                                                        filters: {},
-                                                                    },
-                                                                });
-                                                            }}
-                                                        >
-                                                            Reset All Filters
-                                                        </Button>
-                                                    </Box>
-                                                </Stack>
-                                            </Card>
-                                        </Grid>
-                                    )}
-
-                                    <Grid item xs={12}>
-                                        <Alert severity="info" sx={{ mt: 2 }}>
-                                            <Typography variant="body2">
-                                                The automation will trigger when the selected event occurs. Use filters to narrow down
-                                                which leads should trigger this automation.
-                                            </Typography>
-                                        </Alert>
-                                    </Grid>
-                                </Grid>
-                            </motion.div>
-                        )}
-                        {activeStep === 2 && (
-                            <motion.div
-                                key="steps"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <Stack spacing={3}>
-                                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                                        <Typography variant="h6" fontWeight="bold">
-                                            Automation Workflow
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<AddIcon />}
-                                            onClick={handleAddNewStep}
-                                            size="small"
-                                        >
-                                            Add Step
-                                        </Button>
-                                    </Box>
-
-                                    <Tabs
-                                        value={currentStepIndex}
-                                        onChange={(e, newValue) => setCurrentStepIndex(newValue)}
-                                        variant="scrollable"
-                                        scrollButtons="auto"
-                                        sx={{ borderBottom: 1, borderColor: 'divider' }}
-                                    >
-                                        {formData.steps.map((step, idx) => (
-                                            <Tab
-                                                key={step.stepId}
-                                                label={
-                                                    <Stack direction="row" spacing={1} alignItems="center">
-                                                        {getStepIcon(step.type)}
-                                                        <span>{step.stepId}: {step.name}</span>
-                                                        {(step.type !== "START" && step.type !== "END") && (
-                                                            <IconButton
+                                                        {/* Reset Filters Button */}
+                                                        <Box display="flex" justifyContent="flex-end">
+                                                            <Button
                                                                 size="small"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDeleteStep(idx);
+                                                                onClick={() => {
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        trigger: {
+                                                                            ...formData.trigger,
+                                                                            filters: {},
+                                                                        },
+                                                                    });
                                                                 }}
-                                                                sx={{ ml: 1 }}
                                                             >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        )}
+                                                                Reset All Filters
+                                                            </Button>
+                                                        </Box>
                                                     </Stack>
-                                                }
-                                                sx={{ textTransform: "none", minHeight: 48 }}
-                                            />
-                                        ))}
-                                    </Tabs>
+                                                </Card>
+                                            </Grid>
+                                        )}
 
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={currentStepIndex}
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -20 }}
-                                            transition={{ duration: 0.2 }}
+                                        <Grid item xs={12}>
+                                            <Alert severity="info" sx={{ mt: 2 }}>
+                                                <Typography variant="body2">
+                                                    The automation will trigger when the selected event occurs. Use filters to narrow down
+                                                    which leads should trigger this automation.
+                                                </Typography>
+                                            </Alert>
+                                        </Grid>
+                                    </Grid>
+                                </motion.div>
+                            )}
+                            {activeStep === 2 && (
+                                <motion.div
+                                    key="steps"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <Stack spacing={3}>
+                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                            <Typography variant="h6" fontWeight="bold">
+                                                Automation Workflow
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<AddIcon />}
+                                                onClick={handleAddNewStep}
+                                                size="small"
+                                            >
+                                                Add Step
+                                            </Button>
+                                        </Box>
+
+                                        <Tabs
+                                            value={currentStepIndex}
+                                            onChange={(e, newValue) => setCurrentStepIndex(newValue)}
+                                            variant="scrollable"
+                                            scrollButtons="auto"
+                                            sx={{ borderBottom: 1, borderColor: 'divider' }}
                                         >
-                                            <Card variant="outlined">
-                                                <CardContent>
-                                                    <Stack spacing={3}>
-                                                        <TextField
-                                                            fullWidth
-                                                            label="Step Name"
-                                                            value={formData.steps[currentStepIndex].name}
-                                                            onChange={(e) => {
-                                                                const newSteps = [...formData.steps];
-                                                                newSteps[currentStepIndex].name = e.target.value;
-                                                                setFormData({ ...formData, steps: newSteps });
-                                                            }}
-                                                            error={!!validationErrors[currentStepIndex]?.name}
-                                                            helperText={validationErrors[currentStepIndex]?.name}
-                                                            disabled={formData.steps[currentStepIndex].type === "START" ||
-                                                                formData.steps[currentStepIndex].type === "END"}
-                                                        />
+                                            {formData.steps.map((step, idx) => (
+                                                <Tab
+                                                    key={step.stepId}
+                                                    label={
+                                                        <Stack direction="row" spacing={1} alignItems="center">
+                                                            {getStepIcon(step.type)}
+                                                            <span>{step.stepId}: {step.name}</span>
+                                                            {(step.type !== "START" && step.type !== "END") && (
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteStep(idx);
+                                                                    }}
+                                                                    sx={{ ml: 1 }}
+                                                                >
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            )}
+                                                        </Stack>
+                                                    }
+                                                    sx={{ textTransform: "none", minHeight: 48 }}
+                                                />
+                                            ))}
+                                        </Tabs>
 
-                                                        <FormControl fullWidth>
-                                                            <InputLabel>Step Type</InputLabel>
-                                                            <Select
-                                                                value={formData.steps[currentStepIndex].type}
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={currentStepIndex}
+                                                initial={{ opacity: 0, x: 20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -20 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <Card variant="outlined">
+                                                    <CardContent>
+                                                        <Stack spacing={3}>
+                                                            <TextField
+                                                                fullWidth
+                                                                label="Step Name"
+                                                                value={formData.steps[currentStepIndex].name}
                                                                 onChange={(e) => {
                                                                     const newSteps = [...formData.steps];
-                                                                    newSteps[currentStepIndex].type = e.target.value;
+                                                                    newSteps[currentStepIndex].name = e.target.value;
                                                                     setFormData({ ...formData, steps: newSteps });
                                                                 }}
-                                                                label="Step Type"
-                                                            >
-                                                                <MenuItem value="ACTION">Action</MenuItem>
-                                                                <MenuItem value="CONDITION">Condition</MenuItem>
-                                                                <MenuItem value="DELAY">Delay</MenuItem>
-                                                            </Select>
-                                                        </FormControl>
+                                                                error={!!validationErrors[currentStepIndex]?.name}
+                                                                helperText={validationErrors[currentStepIndex]?.name}
+                                                                disabled={formData.steps[currentStepIndex].type === "START" ||
+                                                                    formData.steps[currentStepIndex].type === "END"}
+                                                            />
 
-                                                        {formData.steps[currentStepIndex].type === "ACTION" && (
-                                                            <Stack spacing={2}>
-                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                    <Typography variant="subtitle1" fontWeight="bold">
-                                                                        Actions
-                                                                    </Typography>
-                                                                    <Button
-                                                                        size="small"
-                                                                        startIcon={<AddIcon />}
-                                                                        onClick={handleAddAction}
-                                                                        variant="outlined"
-                                                                    >
-                                                                        Add Action
-                                                                    </Button>
-                                                                </Box>
-                                                                {formData.steps[currentStepIndex].actions.map((action, idx) => (
-                                                                    <ActionConfig
-                                                                        key={idx}
-                                                                        action={action}
-                                                                        onChange={(updated) => handleUpdateAction(idx, updated)}
-                                                                        onDelete={() => handleDeleteAction(idx)}
-                                                                        templates={templates}
-                                                                        pipelines={pipelines}
-                                                                    />
-                                                                ))}
-                                                                {formData.steps[currentStepIndex].actions.length === 0 && (
-                                                                    <Alert severity="warning">
-                                                                        No actions added. Add at least one action.
-                                                                    </Alert>
-                                                                )}
-                                                            </Stack>
-                                                        )}
+                                                            <FormControl fullWidth>
+                                                                <InputLabel>Step Type</InputLabel>
+                                                                <Select
+                                                                    value={formData.steps[currentStepIndex].type}
+                                                                    onChange={(e) => {
+                                                                        const newSteps = [...formData.steps];
+                                                                        newSteps[currentStepIndex].type = e.target.value;
+                                                                        setFormData({ ...formData, steps: newSteps });
+                                                                    }}
+                                                                    label="Step Type"
+                                                                >
+                                                                    <MenuItem value="ACTION">Action</MenuItem>
+                                                                    <MenuItem value="CONDITION">Condition</MenuItem>
+                                                                    <MenuItem value="DELAY">Delay</MenuItem>
+                                                                </Select>
+                                                            </FormControl>
 
-                                                        {formData.steps[currentStepIndex].type === "DELAY" && (
-                                                            <Stack spacing={2}>
-                                                                <Alert severity="info">
-                                                                    This step will pause the automation for the specified duration
-                                                                </Alert>
-                                                                <Grid container spacing={2}>
-                                                                    <Grid item xs={6}>
-                                                                        <TextField
-                                                                            fullWidth
-                                                                            type="number"
-                                                                            label="Duration"
-                                                                            value={formData.steps[currentStepIndex].delay?.value || ""}
-                                                                            onChange={(e) => {
-                                                                                const newSteps = [...formData.steps];
-                                                                                newSteps[currentStepIndex].delay = {
-                                                                                    ...newSteps[currentStepIndex].delay,
-                                                                                    value: parseInt(e.target.value) || 0,
-                                                                                };
-                                                                                setFormData({ ...formData, steps: newSteps });
-                                                                            }}
+                                                            {formData.steps[currentStepIndex].type === "ACTION" && (
+                                                                <Stack spacing={2}>
+                                                                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                        <Typography variant="subtitle1" fontWeight="bold">
+                                                                            Actions
+                                                                        </Typography>
+                                                                        <Button
+                                                                            size="small"
+                                                                            startIcon={<AddIcon />}
+                                                                            onClick={handleAddAction}
+                                                                            variant="outlined"
+                                                                        >
+                                                                            Add Action
+                                                                        </Button>
+                                                                    </Box>
+                                                                    {formData.steps[currentStepIndex].actions.map((action, idx) => (
+                                                                        <ActionConfig
+                                                                            key={idx}
+                                                                            action={action}
+                                                                            onChange={(updated) => handleUpdateAction(idx, updated)}
+                                                                            onDelete={() => handleDeleteAction(idx)}
+                                                                            templates={templates}
+                                                                            pipelines={pipelines}
                                                                         />
-                                                                    </Grid>
-                                                                    <Grid item xs={6}>
-                                                                        <FormControl fullWidth>
-                                                                            <InputLabel>Unit</InputLabel>
-                                                                            <Select
-                                                                                value={formData.steps[currentStepIndex].delay?.unit || "minutes"}
+                                                                    ))}
+                                                                    {formData.steps[currentStepIndex].actions.length === 0 && (
+                                                                        <Alert severity="warning">
+                                                                            No actions added. Add at least one action.
+                                                                        </Alert>
+                                                                    )}
+                                                                </Stack>
+                                                            )}
+
+                                                            {formData.steps[currentStepIndex].type === "DELAY" && (
+                                                                <Stack spacing={2}>
+                                                                    <Alert severity="info">
+                                                                        This step will pause the automation for the specified duration
+                                                                    </Alert>
+                                                                    <Grid container spacing={2}>
+                                                                        <Grid item xs={6}>
+                                                                            <TextField
+                                                                                fullWidth
+                                                                                type="number"
+                                                                                label="Duration"
+                                                                                value={formData.steps[currentStepIndex].delay?.value || ""}
                                                                                 onChange={(e) => {
                                                                                     const newSteps = [...formData.steps];
                                                                                     newSteps[currentStepIndex].delay = {
                                                                                         ...newSteps[currentStepIndex].delay,
-                                                                                        unit: e.target.value,
+                                                                                        value: parseInt(e.target.value) || 0,
                                                                                     };
                                                                                     setFormData({ ...formData, steps: newSteps });
                                                                                 }}
-                                                                                label="Unit"
-                                                                            >
-                                                                                <MenuItem value="minutes">Minutes</MenuItem>
-                                                                                <MenuItem value="hours">Hours</MenuItem>
-                                                                                <MenuItem value="days">Days</MenuItem>
-                                                                            </Select>
-                                                                        </FormControl>
-                                                                    </Grid>
-                                                                </Grid>
-                                                            </Stack>
-                                                        )}
-
-                                                        <Stack spacing={2}>
-                                                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                                <Typography variant="subtitle1" fontWeight="bold">
-                                                                    {formData.steps[currentStepIndex].type === "CONDITION" ? "Branches" : "Transitions"}
-                                                                </Typography>
-                                                                <Button
-                                                                    size="small"
-                                                                    startIcon={<AddIcon />}
-                                                                    onClick={handleAddTransition}
-                                                                    variant="outlined"
-                                                                >
-                                                                    Add {formData.steps[currentStepIndex].type === "CONDITION" ? "Branch" : "Transition"}
-                                                                </Button>
-                                                            </Box>
-
-                                                            {(formData.steps[currentStepIndex].transitions || []).map((transition, idx) => (
-                                                                <Card key={idx} variant="outlined" sx={{ p: 2, bgcolor: alpha('#fafafa', 0.5) }}>
-                                                                    <Stack spacing={2}>
-                                                                        <Stack direction="row" spacing={2} alignItems="center">
-                                                                            <TextField
-                                                                                size="small"
-                                                                                label="Branch Name"
-                                                                                value={transition.name}
-                                                                                onChange={(e) =>
-                                                                                    handleUpdateTransition(idx, { ...transition, name: e.target.value })
-                                                                                }
-                                                                                sx={{ flex: 1 }}
                                                                             />
-                                                                            <IconButton
-                                                                                size="small"
-                                                                                onClick={() => handleDeleteTransition(idx)}
-                                                                                color="error"
-                                                                            >
-                                                                                <DeleteIcon fontSize="small" />
-                                                                            </IconButton>
-                                                                        </Stack>
-                                                                        <>
-                                                                            <FormControl fullWidth size="small">
-                                                                                <InputLabel>Match Type</InputLabel>
+                                                                        </Grid>
+                                                                        <Grid item xs={6}>
+                                                                            <FormControl fullWidth>
+                                                                                <InputLabel>Unit</InputLabel>
                                                                                 <Select
-                                                                                    value={transition.matchType}
+                                                                                    value={formData.steps[currentStepIndex].delay?.unit || "minutes"}
+                                                                                    onChange={(e) => {
+                                                                                        const newSteps = [...formData.steps];
+                                                                                        newSteps[currentStepIndex].delay = {
+                                                                                            ...newSteps[currentStepIndex].delay,
+                                                                                            unit: e.target.value,
+                                                                                        };
+                                                                                        setFormData({ ...formData, steps: newSteps });
+                                                                                    }}
+                                                                                    label="Unit"
+                                                                                >
+                                                                                    <MenuItem value="minutes">Minutes</MenuItem>
+                                                                                    <MenuItem value="hours">Hours</MenuItem>
+                                                                                    <MenuItem value="days">Days</MenuItem>
+                                                                                </Select>
+                                                                            </FormControl>
+                                                                        </Grid>
+                                                                    </Grid>
+                                                                </Stack>
+                                                            )}
+
+                                                            <Stack spacing={2}>
+                                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                                    <Typography variant="subtitle1" fontWeight="bold">
+                                                                        {formData.steps[currentStepIndex].type === "CONDITION" ? "Branches" : "Transitions"}
+                                                                    </Typography>
+                                                                    <Button
+                                                                        size="small"
+                                                                        startIcon={<AddIcon />}
+                                                                        onClick={handleAddTransition}
+                                                                        variant="outlined"
+                                                                    >
+                                                                        Add {formData.steps[currentStepIndex].type === "CONDITION" ? "Branch" : "Transition"}
+                                                                    </Button>
+                                                                </Box>
+
+                                                                {(formData.steps[currentStepIndex].transitions || []).map((transition, idx) => (
+                                                                    <Card key={idx} variant="outlined" sx={{ p: 2, bgcolor: alpha('#fafafa', 0.5) }}>
+                                                                        <Stack spacing={2}>
+                                                                            <Stack direction="row" spacing={2} alignItems="center">
+                                                                                <TextField
+                                                                                    size="small"
+                                                                                    label="Branch Name"
+                                                                                    value={transition.name}
+                                                                                    onChange={(e) =>
+                                                                                        handleUpdateTransition(idx, { ...transition, name: e.target.value })
+                                                                                    }
+                                                                                    sx={{ flex: 1 }}
+                                                                                />
+                                                                                <IconButton
+                                                                                    size="small"
+                                                                                    onClick={() => handleDeleteTransition(idx)}
+                                                                                    color="error"
+                                                                                >
+                                                                                    <DeleteIcon fontSize="small" />
+                                                                                </IconButton>
+                                                                            </Stack>
+                                                                            <>
+                                                                                <FormControl fullWidth size="small">
+                                                                                    <InputLabel>Match Type</InputLabel>
+                                                                                    <Select
+                                                                                        value={transition.matchType}
+                                                                                        onChange={(e) =>
+                                                                                            handleUpdateTransition(idx, {
+                                                                                                ...transition,
+                                                                                                matchType: e.target.value,
+                                                                                            })
+                                                                                        }
+                                                                                        label="Match Type"
+                                                                                    >
+                                                                                        <MenuItem value="AND">All conditions must match (AND)</MenuItem>
+                                                                                        <MenuItem value="OR">Any condition can match (OR)</MenuItem>
+                                                                                    </Select>
+                                                                                </FormControl>
+
+                                                                                <Typography variant="caption" color="textSecondary">
+                                                                                    Conditions
+                                                                                </Typography>
+                                                                                {transition.conditions.map((condition, condIdx) => (
+                                                                                    <ConditionConfig
+                                                                                        key={condIdx}
+                                                                                        condition={condition}
+                                                                                        onChange={(updated) => {
+                                                                                            const newConditions = [...transition.conditions];
+                                                                                            newConditions[condIdx] = updated;
+                                                                                            handleUpdateTransition(idx, {
+                                                                                                ...transition,
+                                                                                                conditions: newConditions,
+                                                                                            });
+                                                                                        }}
+                                                                                        onDelete={() => {
+                                                                                            const newConditions = transition.conditions.filter(
+                                                                                                (_, i) => i !== condIdx
+                                                                                            );
+                                                                                            handleUpdateTransition(idx, {
+                                                                                                ...transition,
+                                                                                                conditions: newConditions,
+                                                                                            });
+                                                                                        }}
+                                                                                    />
+                                                                                ))}
+                                                                                <Button
+                                                                                    size="small"
+                                                                                    startIcon={<AddIcon />}
+                                                                                    onClick={() => handleAddCondition(idx)}
+                                                                                    sx={{ alignSelf: 'flex-start' }}
+                                                                                >
+                                                                                    Add Condition
+                                                                                </Button>
+                                                                            </>
+                                                                            <FormControl fullWidth size="small">
+                                                                                <InputLabel>Next Step</InputLabel>
+                                                                                <Select
+                                                                                    value={transition.nextStepId}
                                                                                     onChange={(e) =>
                                                                                         handleUpdateTransition(idx, {
                                                                                             ...transition,
-                                                                                            matchType: e.target.value,
+                                                                                            nextStepId: e.target.value,
                                                                                         })
                                                                                     }
-                                                                                    label="Match Type"
+                                                                                    label="Next Step"
                                                                                 >
-                                                                                    <MenuItem value="AND">All conditions must match (AND)</MenuItem>
-                                                                                    <MenuItem value="OR">Any condition can match (OR)</MenuItem>
+                                                                                    {formData.steps.map((step) => (
+                                                                                        <MenuItem key={step.stepId} value={step.stepId}>
+                                                                                            {step.stepId}: {step.name} ({step.type})
+                                                                                        </MenuItem>
+                                                                                    ))}
                                                                                 </Select>
                                                                             </FormControl>
-
-                                                                            <Typography variant="caption" color="textSecondary">
-                                                                                Conditions
-                                                                            </Typography>
-                                                                            {transition.conditions.map((condition, condIdx) => (
-                                                                                <ConditionConfig
-                                                                                    key={condIdx}
-                                                                                    condition={condition}
-                                                                                    onChange={(updated) => {
-                                                                                        const newConditions = [...transition.conditions];
-                                                                                        newConditions[condIdx] = updated;
-                                                                                        handleUpdateTransition(idx, {
-                                                                                            ...transition,
-                                                                                            conditions: newConditions,
-                                                                                        });
-                                                                                    }}
-                                                                                    onDelete={() => {
-                                                                                        const newConditions = transition.conditions.filter(
-                                                                                            (_, i) => i !== condIdx
-                                                                                        );
-                                                                                        handleUpdateTransition(idx, {
-                                                                                            ...transition,
-                                                                                            conditions: newConditions,
-                                                                                        });
-                                                                                    }}
-                                                                                />
-                                                                            ))}
-                                                                            <Button
-                                                                                size="small"
-                                                                                startIcon={<AddIcon />}
-                                                                                onClick={() => handleAddCondition(idx)}
-                                                                                sx={{ alignSelf: 'flex-start' }}
-                                                                            >
-                                                                                Add Condition
-                                                                            </Button>
-                                                                        </>
-                                                                        <FormControl fullWidth size="small">
-                                                                            <InputLabel>Next Step</InputLabel>
-                                                                            <Select
-                                                                                value={transition.nextStepId}
-                                                                                onChange={(e) =>
-                                                                                    handleUpdateTransition(idx, {
-                                                                                        ...transition,
-                                                                                        nextStepId: e.target.value,
-                                                                                    })
-                                                                                }
-                                                                                label="Next Step"
-                                                                            >
-                                                                                {formData.steps.map((step) => (
-                                                                                    <MenuItem key={step.stepId} value={step.stepId}>
-                                                                                        {step.stepId}: {step.name} ({step.type})
-                                                                                    </MenuItem>
-                                                                                ))}
-                                                                            </Select>
-                                                                        </FormControl>
-                                                                    </Stack>
-                                                                </Card>
-                                                            ))}
+                                                                        </Stack>
+                                                                    </Card>
+                                                                ))}
+                                                            </Stack>
                                                         </Stack>
-                                                    </Stack>
-                                                </CardContent>
-                                            </Card>
-                                        </motion.div>
-                                    </AnimatePresence>
-                                </Stack>
-                            </motion.div>
-                        )}
-
-                        {/* Step 4: Review & Save */}
-                        {activeStep === 3 && (
-                            <motion.div
-                                key="review"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <Alert severity="info" sx={{ mb: 3 }}>
-                                    Review your automation configuration before saving
-                                </Alert>
-
-                                <Accordion defaultExpanded>
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                        <Typography fontWeight="bold">Basic Information</Typography>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                        <Grid container spacing={2}>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="body2" color="textSecondary">Name</Typography>
-                                                <Typography variant="body1">{formData.name}</Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <Typography variant="body2" color="textSecondary">Category</Typography>
-                                                <Chip label={formData.category.replace(/_/g, " ")} size="small" />
-                                            </Grid>
-                                            <Grid item xs={12}>
-                                                <Typography variant="body2" color="textSecondary">Description</Typography>
-                                                <Typography variant="body1">{formData.description || "—"}</Typography>
-                                            </Grid>
-                                        </Grid>
-                                    </AccordionDetails>
-                                </Accordion>
-
-                                <Accordion>
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                        <Typography fontWeight="bold">Trigger Configuration</Typography>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                        <Typography variant="body2" color="textSecondary">Trigger Type</Typography>
-                                        <Typography variant="body1">{formData.trigger.type.replace(/_/g, " ")}</Typography>
-                                        {formData.trigger.type === "SCHEDULED" && (
-                                            <>
-                                                <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                                                    Cron Schedule
-                                                </Typography>
-                                                <Typography variant="body1">{formData.trigger.schedule?.cron || "—"}</Typography>
-                                                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                                                    Timezone
-                                                </Typography>
-                                                <Typography variant="body1">{formData.trigger.schedule?.timezone || "UTC"}</Typography>
-                                            </>
-                                        )}
-                                    </AccordionDetails>
-                                </Accordion>
-
-                                <Accordion>
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                        <Typography fontWeight="bold">Workflow Steps</Typography>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                        <Stack spacing={2}>
-                                            {formData.steps.map((step, idx) => (
-                                                <Card key={step.stepId} variant="outlined" sx={{ p: 2 }}>
-                                                    <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                                                        {getStepIcon(step.type)}
-                                                        <Typography variant="subtitle2" fontWeight="bold">
-                                                            {step.stepId}: {step.name}
-                                                        </Typography>
-                                                        <Chip label={step.type} size="small" />
-                                                    </Stack>
-                                                    {step.type === "ACTION" && (
-                                                        <Typography variant="caption" color="textSecondary">
-                                                            {step.actions.length} action(s)
-                                                        </Typography>
-                                                    )}
-                                                    {step.type === "CONDITION" && (
-                                                        <Typography variant="caption" color="textSecondary">
-                                                            {step.transitions?.length || 0} branch(es)
-                                                        </Typography>
-                                                    )}
-                                                    {step.type === "DELAY" && step.delay && (
-                                                        <Typography variant="caption" color="textSecondary">
-                                                            Wait {step.delay.value} {step.delay.unit}
-                                                        </Typography>
-                                                    )}
-                                                    {step.transitions && step.transitions.length > 0 && (
-                                                        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
-                                                            {step.transitions.map((t, i) => (
-                                                                <Chip
-                                                                    key={i}
-                                                                    label={`→ ${t.nextStepId}`}
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                />
-                                                            ))}
-                                                        </Stack>
-                                                    )}
+                                                    </CardContent>
                                                 </Card>
-                                            ))}
-                                        </Stack>
-                                    </AccordionDetails>
-                                </Accordion>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Navigation Buttons */}
-                    <Box display="flex" justifyContent="space-between" mt={4}>
-                        <Button
-                            variant="outlined"
-                            onClick={() => setActiveStep((prev) => prev - 1)}
-                            disabled={activeStep === 0}
-                            size="large"
-                        >
-                            Back
-                        </Button>
-                        <Box>
-                            {activeStep === steps.length - 1 ? (
-                                <Button
-                                    variant="contained"
-                                    onClick={handleSaveAutomation}
-                                    disabled={loading}
-                                    startIcon={loading ? <CircularProgress size={20} /> : null}
-                                    size="large"
-                                    sx={{ px: 4 }}
-                                >
-                                    {id ? "Update Automation" : "Create Automation"}
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="contained"
-                                    onClick={() => setActiveStep((prev) => prev + 1)}
-                                    size="large"
-                                    sx={{ px: 4 }}
-                                >
-                                    Next
-                                </Button>
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    </Stack>
+                                </motion.div>
                             )}
+
+                            {/* Step 4: Review & Save */}
+                            {activeStep === 3 && (
+                                <motion.div
+                                    key="review"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <Alert severity="info" sx={{ mb: 3 }}>
+                                        Review your automation configuration before saving
+                                    </Alert>
+
+                                    <Accordion defaultExpanded>
+                                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                            <Typography fontWeight="bold">Basic Information</Typography>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={12} sm={6}>
+                                                    <Typography variant="body2" color="textSecondary">Name</Typography>
+                                                    <Typography variant="body1">{formData.name}</Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={6}>
+                                                    <Typography variant="body2" color="textSecondary">Category</Typography>
+                                                    <Chip label={formData.category.replace(/_/g, " ")} size="small" />
+                                                </Grid>
+                                                <Grid item xs={12}>
+                                                    <Typography variant="body2" color="textSecondary">Description</Typography>
+                                                    <Typography variant="body1">{formData.description || "—"}</Typography>
+                                                </Grid>
+                                            </Grid>
+                                        </AccordionDetails>
+                                    </Accordion>
+
+                                    <Accordion>
+                                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                            <Typography fontWeight="bold">Trigger Configuration</Typography>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <Typography variant="body2" color="textSecondary">Trigger Type</Typography>
+                                            <Typography variant="body1">{formData.trigger.type.replace(/_/g, " ")}</Typography>
+                                            {formData.trigger.type === "SCHEDULED" && (
+                                                <>
+                                                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                                                        Cron Schedule
+                                                    </Typography>
+                                                    <Typography variant="body1">{formData.trigger.schedule?.cron || "—"}</Typography>
+                                                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                                                        Timezone
+                                                    </Typography>
+                                                    <Typography variant="body1">{formData.trigger.schedule?.timezone || "UTC"}</Typography>
+                                                </>
+                                            )}
+                                        </AccordionDetails>
+                                    </Accordion>
+
+                                    <Accordion>
+                                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                            <Typography fontWeight="bold">Workflow Steps</Typography>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <Stack spacing={2}>
+                                                {formData.steps.map((step, idx) => (
+                                                    <Card key={step.stepId} variant="outlined" sx={{ p: 2 }}>
+                                                        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                                                            {getStepIcon(step.type)}
+                                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                                {step.stepId}: {step.name}
+                                                            </Typography>
+                                                            <Chip label={step.type} size="small" />
+                                                        </Stack>
+                                                        {step.type === "ACTION" && (
+                                                            <Typography variant="caption" color="textSecondary">
+                                                                {step.actions.length} action(s)
+                                                            </Typography>
+                                                        )}
+                                                        {step.type === "CONDITION" && (
+                                                            <Typography variant="caption" color="textSecondary">
+                                                                {step.transitions?.length || 0} branch(es)
+                                                            </Typography>
+                                                        )}
+                                                        {step.type === "DELAY" && step.delay && (
+                                                            <Typography variant="caption" color="textSecondary">
+                                                                Wait {step.delay.value} {step.delay.unit}
+                                                            </Typography>
+                                                        )}
+                                                        {step.transitions && step.transitions.length > 0 && (
+                                                            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
+                                                                {step.transitions.map((t, i) => (
+                                                                    <Chip
+                                                                        key={i}
+                                                                        label={`→ ${t.nextStepId}`}
+                                                                        size="small"
+                                                                        variant="outlined"
+                                                                    />
+                                                                ))}
+                                                            </Stack>
+                                                        )}
+                                                    </Card>
+                                                ))}
+                                            </Stack>
+                                        </AccordionDetails>
+                                    </Accordion>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Navigation Buttons */}
+                        <Box display="flex" justifyContent="space-between" mt={4}>
+                            <Button
+                                variant="outlined"
+                                onClick={() => setActiveStep((prev) => prev - 1)}
+                                disabled={activeStep === 0}
+                                size="large"
+                            >
+                                Back
+                            </Button>
+                            <Box>
+                                {activeStep === steps.length - 1 ? (
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleSaveAutomation}
+                                        disabled={loading}
+                                        startIcon={loading ? <CircularProgress size={20} /> : null}
+                                        size="large"
+                                        sx={{ px: 4 }}
+                                    >
+                                        {id ? "Update Automation" : "Create Automation"}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => setActiveStep((prev) => prev + 1)}
+                                        size="large"
+                                        sx={{ px: 4 }}
+                                    >
+                                        Next
+                                    </Button>
+                                )}
+                            </Box>
                         </Box>
                     </Box>
-                </Box>
-            </Paper>
-        </div >
-         <div className="h-[calc(100vh-6rem)] bg-gray-50 rounded-lg border border-gray-200 overflow- sticky top-6">
-         <AutomationEditorWithProvider
-      formData={formData}
-      setFormData={setFormData}
-   />
-    </div>
+                </Paper>
+            </div >
+            <div className="h-[calc(100vh-6rem)] bg-gray-50 rounded-lg border border-gray-200 overflow- sticky top-6">
+                <AutomationEditorWithProvider
+                    formData={formData}
+                    setFormData={setFormData}
+                />
+            </div>
         </div>
     );
 };

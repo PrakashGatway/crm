@@ -642,16 +642,17 @@ export default function WhatsAppBroadcast() {
                     </div>
                 ) : (
                     <>
-                        <TableContainer className="max-h-[600px] overflow-auto">
+                        <TableContainer className="max-h-[600px] !text-xs overflow-auto">
                             <Table stickyHeader>
                                 <TableHead>
-                                    <TableRow className="!bg-gray-50">
+                                    <TableRow className="!bg-gray-50 ">
                                         <TableCell className="!font-semibold">Name</TableCell>
-                                        <TableCell className="!font-semibold">Message Type</TableCell>
+                                        <TableCell className="!font-semibold">Type</TableCell>
                                         <TableCell className="!font-semibold">Status</TableCell>
                                         <TableCell className="!font-semibold">Schedule</TableCell>
                                         <TableCell className="!font-semibold">Progress</TableCell>
                                         <TableCell className="!font-semibold">Stats</TableCell>
+                                        <TableCell className="!font-semibold">Created By</TableCell>
                                         <TableCell className="!font-semibold text-right">Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -671,9 +672,6 @@ export default function WhatsAppBroadcast() {
                                             <TableCell>
                                                 <div className="flex items-center gap-1">
                                                     {messageTypes[broadcast.messageType]?.icon}
-                                                    <span className="text-sm">
-                                                        {messageTypes[broadcast.messageType]?.label || broadcast.messageType}
-                                                    </span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -745,6 +743,14 @@ export default function WhatsAppBroadcast() {
                                                     </div>
                                                 </div>
                                             </TableCell>
+                                            <TableCell><div className=''>
+                                                <span>
+                                                    {broadcast.createdBy?.name || 'N/A'}
+                                                </span> <br/>
+                                                <span>
+                                                    {broadcast.createdAt ? new Date(broadcast.createdAt).toLocaleString() : ''}
+                                                </span>
+                                            </div></TableCell>
                                             <TableCell align="right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     {(broadcast.status === 'scheduled' || broadcast.status === 'draft') && (

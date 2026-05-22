@@ -1,7 +1,6 @@
 // components/automation/AutomationList.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
 import {
     Paper,
     TextField,
@@ -46,20 +45,14 @@ import {
     Workflow,
     Inbox,
     X as Clear,
-    FilterList,
-    Calendar,
-    User,
     TrendingUp,
     Clock,
-    AlertCircle,
-    CheckCircle,
-    XCircle,
-    Eye,
     Activity,
     View,
 } from "lucide-react";
-import { automationAPI } from "../../axiosInstance";
+import api, { automationAPI } from "../../axiosInstance";
 import { toast } from "react-toastify";
+import { DirectionsRun } from "@mui/icons-material";
 
 const AutomationList = () => {
     const [filters, setFilters] = useState({ status: "", category: "", search: "" });
@@ -67,23 +60,14 @@ const AutomationList = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [totalCount, setTotalCount] = useState(0);
-
-    // Pagination state
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-
-    // Sorting state
     const [orderBy, setOrderBy] = useState("createdAt");
     const [order, setOrder] = useState("desc");
-
-    // Selected rows for bulk actions
     const [selectedRows, setSelectedRows] = useState([]);
-
-    // Menu state
     const [menuAnchor, setMenuAnchor] = useState(null);
     const [selectedAutomationId, setSelectedAutomationId] = useState(null);
 
-    // Statistics
     const [stats, setStats] = useState({
         total: 0,
         active: 0,
@@ -193,6 +177,27 @@ const AutomationList = () => {
         handleCloseMenu();
     };
 
+    const manuallyTrigger = async (id) => {
+        try {
+            await api.get(`/automation/control/${id}`);
+            toast.success("Automation triggered successfully");
+            await refreshData();
+        } catch (err) {
+            toast.error(err.message || "Failed to trigger automation");
+        }
+        handleCloseMenu();
+    };
+
+    const pausePipeline = async (automationId) => {
+        await api.post(`/automation/run/pause/${automationId}`);
+        await refreshData();
+    };
+
+    const resumePipeline = async (automationId) => {
+        await api.post(`/automation/run/resume/${automationId}`);
+        await refreshData();
+    };
+
     const handleBulkDelete = async () => {
         if (selectedRows.length === 0) return;
         if (!window.confirm(`Are you sure you want to delete ${selectedRows.length} automation(s)?`)) return;
@@ -228,20 +233,6 @@ const AutomationList = () => {
     const handleCloseMenu = () => {
         setMenuAnchor(null);
         setSelectedAutomationId(null);
-    };
-
-    const handleSelectRow = (id) => {
-        setSelectedRows(prev =>
-            prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
-        );
-    };
-
-    const handleSelectAllRows = (event) => {
-        if (event.target.checked) {
-            setSelectedRows(automations.map(a => a._id));
-        } else {
-            setSelectedRows([]);
-        }
     };
 
     const handleSort = (property) => {
@@ -293,14 +284,6 @@ const AutomationList = () => {
             CUSTOM: "#6b7280",
         };
         return colors[category] || colors.CUSTOM;
-    };
-
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
     };
 
     const getStepCount = (steps) => {
@@ -445,7 +428,7 @@ const AutomationList = () => {
 
             {/* Table */}
             <Paper elevation={0} sx={{ borderRadius: 2, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                <TableContainer>
+                <TableContainer className="!text-xs">
                     <Table sx={{ minWidth: 750 }}>
                         <TableHead sx={{ bgcolor: "#f9fafb" }}>
                             <TableRow>
@@ -470,15 +453,6 @@ const AutomationList = () => {
                                 </TableCell>
                                 <TableCell>Category</TableCell>
                                 <TableCell>Steps</TableCell>
-                                <TableCell>
-                                    <TableSortLabel
-                                        active={orderBy === "executionStats.totalExecutions"}
-                                        direction={orderBy === "executionStats.totalExecutions" ? order : "asc"}
-                                        onClick={() => handleSort("executionStats.totalExecutions")}
-                                    >
-                                        Executions
-                                    </TableSortLabel>
-                                </TableCell>
                                 <TableCell>Success Rate</TableCell>
                                 <TableCell>
                                     <TableSortLabel
@@ -577,12 +551,7 @@ const AutomationList = () => {
                                                     </div>
                                                 </Tooltip>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1">
-                                                    <TrendingUp size={14} className="text-gray-400" />
-                                                    <span className="text-sm font-medium">{execStats.total.toLocaleString()}</span>
-                                                </div>
-                                            </TableCell>
+
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     <LinearProgress
@@ -595,32 +564,51 @@ const AutomationList = () => {
                                                     </span>
                                                 </div>
                                             </TableCell>
+
+
                                             <TableCell>
-                                                <div className="text-sm text-gray-600">{formatDate(automation.createdAt)}</div>
-                                                <div className="text-xs text-gray-400">{new Date(automation.createdAt).toLocaleTimeString()}</div>
+                                                <div className="text-sm text-gray-600">{automation.createdBy.name}</div>
+                                                <div className="text-xs text-gray-500">{new Date(automation.createdAt).toLocaleString()}</div>
                                             </TableCell>
                                             <TableCell align="center">
                                                 <Stack direction="row" spacing={1} justifyContent="center">
-                                                    <Tooltip title="Edit">
-                                                        <IconButton
-                                                            component={Link}
-                                                            to={`/auto/edit/${automation._id}`}
-                                                            size="small"
-                                                            sx={{ color: "#4f46e5" }}
-                                                        >
-                                                            <View size={18} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Edit">
-                                                        <IconButton
-                                                            component={Link}
-                                                            to={`/automations/edit/${automation._id}`}
-                                                            size="small"
-                                                            sx={{ color: "#4f46e5" }}
-                                                        >
-                                                            <Edit size={18} />
-                                                        </IconButton>
-                                                    </Tooltip>
+
+                                                    {automation.status === "ACTIVE" && (automation.runningStatus == "PAUSED" || automation.runningStatus == "IDLE") && (
+                                                        <Tooltip title="Resume/start Automation">
+                                                            <IconButton
+                                                                onClick={() =>
+                                                                    automation.runningStatus == "IDLE" ? manuallyTrigger(automation._id): resumePipeline(
+                                                                        automation._id
+                                                                    )
+                                                                }
+                                                                size="small"
+                                                                sx={{
+                                                                    color: "#94aaa2"
+                                                                }}
+                                                            >
+                                                                <DirectionsRun size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+
+                                                    {automation.status === "ACTIVE" && automation.runningStatus === "RUNNING" && (
+                                                        <Tooltip title="Pause Automation">
+                                                            <IconButton
+                                                                onClick={() =>
+                                                                    pausePipeline(
+                                                                        automation._id
+                                                                    )
+                                                                }
+                                                                size="small"
+                                                                sx={{
+                                                                    color: "#000000"
+                                                                }}
+                                                            >
+                                                                <DirectionsRun size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+
                                                     <Tooltip title={automation.status === "ACTIVE" ? "Deactivate" : "Activate"}>
                                                         <IconButton
                                                             onClick={() => handleToggleStatus(automation._id, automation.status)}
@@ -676,10 +664,6 @@ const AutomationList = () => {
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-                <MenuItem component={Link} to={`/auto/edit/${selectedAutomationId}`} onClick={handleCloseMenu}>
-                    <ListItemIcon><View size={16} /></ListItemIcon>
-                    <ListItemText>View Workflow</ListItemText>
-                </MenuItem>
                 <MenuItem component={Link} to={`/automations/edit/${selectedAutomationId}`} onClick={handleCloseMenu}>
                     <ListItemIcon><Edit size={16} /></ListItemIcon>
                     <ListItemText>Edit Workflow</ListItemText>

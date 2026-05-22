@@ -62,7 +62,7 @@ import AutomationExecutionModal from "./automation";
 // };
 
 
-const LeadSources = [
+export const LeadSources = [
   'googleAds',
   'website',
   'education_fair',
