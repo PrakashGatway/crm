@@ -553,8 +553,8 @@ const UserListPage = () => {
       className=" inset-0 z-50 bg-white dark:bg-gray-900 overflow-y-auto"
     >
       {/* Form Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-6 py-2">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-2 py-2">
+        <div className="flex items-center justify-between w-full mx-auto">
           <div className="flex items-center gap-4">
             <IconButton
               onClick={handleCloseForm}
@@ -592,7 +592,7 @@ const UserListPage = () => {
       </div>
 
       {/* Form Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-2">
+      <div className="w-full mx-auto px-6 py-8 space-y-2">
         {/* Basic Information */}
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -1013,9 +1013,6 @@ const UserListPage = () => {
                               Status
                             </th>
                             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                              Verified
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-300">
                               <span className="flex items-center">
                                 Last Active
                               </span>
@@ -1061,11 +1058,11 @@ const UserListPage = () => {
                               {/* Role */}
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span
-                                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(
+                                  className={`inline-flex items-center px-4 py-1.5 rounded-full capitalize text-xs font-medium ${getRoleColor(
                                     user.role
                                   )}`}
                                 >
-                                  {user.role.replace("_", " ")}
+                                  {user.role.replace("_", " ")} <br /> {user.website || "N/A"}
                                 </span>
                               </td>
 
@@ -1111,17 +1108,6 @@ const UserListPage = () => {
                                 </Tooltip>
                               </td>
 
-                              {/* Verified */}
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isVerified
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                    }`}
-                                >
-                                  {user.isVerified ? "Verified" : "Unverified"}
-                                </span>
-                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 {moment(user.lastActive).format("MMM D, YYYY h:mm A")}
                               </td>

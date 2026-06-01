@@ -933,7 +933,7 @@ export default function LeadManagement() {
                         <option value="">All Counselors</option>
                         {allCounselors.map((c) => (
                           <option key={c._id} value={c._id}>
-                            {c.name || c.email}
+                            {c.name || c.email} <br /> ({c.website == "gatewayAbroad" ? "GA" : c.website == "ooshasGlobal" ? "OG" : c.website == "ooshasPrep" ? "OP" : "N/A"})
                           </option>
                         ))}
                       </select>
