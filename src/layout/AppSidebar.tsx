@@ -234,13 +234,19 @@ const AppSidebar: React.FC = () => {
       {/* Logo */}
       <div className="py-4 flex justify-center items-center border-b border-gray-100 dark:border-gray-800">
         <Link to="/" className="flex flex-col items-center">
-          <img
+          {user.website == "ooshasGlobal" ? <img
+            src="/oo.png"
+            alt="Logo"
+            width={50}
+            height={30}
+            className="object-contain scale-120 shadow-lg rounded-full border-4 border-gray-200 dark:border-gray-700"
+          /> : <img
             src="https://www.gatewayabroadeducations.com/favicon.ico"
             alt="Logo"
             width={50}
             height={30}
             className="object-contain scale-120 shadow-lg rounded-full border-4 border-gray-200 dark:border-gray-700"
-          />
+          />}
         </Link>
       </div>
 

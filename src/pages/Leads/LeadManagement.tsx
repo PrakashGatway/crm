@@ -75,6 +75,7 @@ export const LeadSources = [
   "other"
 ];
 
+
 export default function LeadManagement() {
   const [searchParams] = useSearchParams();
 
@@ -114,6 +115,7 @@ export default function LeadManagement() {
     sortBy: "-createdAt",
     status: "",
     source: "",
+    website: "",
     assignedCounselor: "",
     coursePreference: "",
     countryOfResidence: "",
@@ -177,6 +179,7 @@ export default function LeadManagement() {
       sortBy: "-createdAt",
       status: "",
       source: "",
+      website: "",
       assignedCounselor: "",
       coursePreference: "",
       countryOfResidence: "",
@@ -354,7 +357,7 @@ export default function LeadManagement() {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get(`/leads/stats?source=${filters.source}&assignedCounselor=${filters.assignedCounselor}&dateRange=${filters.dateRange}&search=${filters.search}`);
+      const response = await api.get(`/leads/stats?source=${filters.source}&assignedCounselor=${filters.assignedCounselor}&dateRange=${filters.dateRange}&search=${filters.search}&website=${filters.website}`);
       setStats(response.data?.stats || []);
     } catch (error) {
       toast.error(error?.message || "Failed to fetch leads");
@@ -365,7 +368,7 @@ export default function LeadManagement() {
 
   useEffect(() => {
     fetchStats();
-  }, [filters.source, filters.assignedCounselor, filters.dateRange, debouncedSearch]);
+  }, [filters.source, filters.website, filters.assignedCounselor, filters.dateRange, debouncedSearch]);
 
   useEffect(() => {
     let pollInterval = null;
@@ -432,6 +435,7 @@ export default function LeadManagement() {
     filters.sortBy,
     filters.status,
     filters.source,
+    filters.website,
     filters.assignedCounselor,
     filters.coursePreference,
     filters.countryOfResidence,
@@ -442,7 +446,7 @@ export default function LeadManagement() {
 
   const fetchCounselors = async () => {
     try {
-      const res = await api.get("/users?role=counselor");
+      const res = await api.get("/users?role=counselor&website=" + filters.website);
       setAllCounselors(res.data?.users || []);
     } catch (error) {
       console.error("Failed to fetch counselors:", error);
@@ -578,9 +582,6 @@ export default function LeadManagement() {
       );
     }
   };
-
-
-
 
   const openEditModal = (lead) => {
     setSelectedLead(lead);
@@ -746,6 +747,7 @@ export default function LeadManagement() {
     if (filters.search) count++;
     if (filters.status) count++;
     if (filters.source) count++;
+    if (filters.website) count++;
     if (filters.assignedCounselor) count++;
     if (filters.coursePreference) count++;
     if (filters.countryOfResidence) count++;
@@ -897,6 +899,23 @@ export default function LeadManagement() {
                             {s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                           </option>
                         ))}
+                      </select>
+                    </div>}
+
+                    {(user.role === "admin") && <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Website
+                      </label>
+                      <select
+                        name="website"
+                        value={filters.website}
+                        onChange={handleFilterChange}
+                        className="w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      >
+                        <option value="">All Websites</option>
+                        <option value="gatewayAbroad">Gateway abroad</option>
+                        <option value="ooshasGlobal">Ooshas Global</option>
+                        <option value="ooshasPrep">Ooshas Prep</option>
                       </select>
                     </div>}
 
@@ -1192,12 +1211,12 @@ export default function LeadManagement() {
 
                           </span>
                         </td>
-                        <td onClick={() => viewLeadDetails(lead)} className="whitespace-nowrap px-2 py-2 text-sm text-gray-500 dark:text-gray-300 capitalize">
+                        <td onClick={() => viewLeadDetails(lead)} className="whitespace-nowrap px-2 py-2 text-xs font-medium text-gray-500 dark:text-gray-300 capitalize">
                           {lead?.createdAt &&
                             moment(lead?.createdAt).format("MMM D, YYYY h:mm A")}
                           <br />
                           {(user?.role == "admin" || user?.role == "manager") &&
-                            lead?.source.replace(/_/g, " ")}
+                            lead?.source.replace(/_/g, " ") + " - " + lead?.website}
                         </td>
                         <td className="whitespace-nowrap px-2 py-3 text-sm font-medium">
                           <div className="flex space-x-2">
@@ -1235,7 +1254,7 @@ export default function LeadManagement() {
                                 >
                                   <Target className="h-5 w-5" />
                                 </button>
-                           
+
                               </>
                             )}
                           </div>
@@ -1315,15 +1334,15 @@ export default function LeadManagement() {
           )}
         </div>
 
-             <AutomationExecutionModal
-                                  isOpen={automationModalOpen}
-                                  onClose={() => setAutomationModalOpen(false)}
-                                  leadId={selectedLeadForAutomation?._id}
-                                  leadName={selectedLeadForAutomation?.fullName}
-                                  onExecutionComplete={(result) => {
-                                    null
-                                  }}
-                                />
+        <AutomationExecutionModal
+          isOpen={automationModalOpen}
+          onClose={() => setAutomationModalOpen(false)}
+          leadId={selectedLeadForAutomation?._id}
+          leadName={selectedLeadForAutomation?.fullName}
+          onExecutionComplete={(result) => {
+            null
+          }}
+        />
         {showAppliedFilters ? (
           <div className={`duration-300 ease-in-out h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-100 ${showAppliedFilters ? "block" : "hidden"}`}>
             <div className="p-2">
