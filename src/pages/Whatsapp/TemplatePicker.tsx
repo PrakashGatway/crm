@@ -245,19 +245,19 @@ const TemplatePicker = ({ open, onClose, onSelectTemplate, lead }) => {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <Typography variant="subtitle2" className="font-semibold">
-                            {template.name}
+                            {template?.name}
                           </Typography>
                           <Typography variant="caption" className="text-gray-500 block">
-                            {template.category}
+                            {template?.category}
                           </Typography>
                           <Typography variant="body2" className="text-sm mt-1 line-clamp-2">
-                            {template.components.find(c => c.type === 'BODY')?.text.substring(0, 100)}...
+                            {template?.components?.find(c => c.type === 'BODY')?.text?.substring(0, 100)}...
                           </Typography>
                         </div>
                         <Chip 
-                          label={template.status}
+                          label={template?.status}
                           size="small"
-                          color={template.status === 'APPROVED' ? 'success' : 'warning'}
+                          color={template?.status === 'APPROVED' ? 'success' : 'warning'}
                         />
                       </div>
                     </motion.div>
@@ -288,7 +288,7 @@ const TemplatePicker = ({ open, onClose, onSelectTemplate, lead }) => {
                   </Button>
                 </div>
                 
-                {selectedTemplate?.components.map((comp, idx) => {
+                {selectedTemplate?.components?.map((comp, idx) => {
                   if (comp.type === 'BODY') {
                     const text = comp.text;
                     const parts = text.split(/({{[0-9]+}})/);
