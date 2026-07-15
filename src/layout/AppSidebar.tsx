@@ -56,7 +56,9 @@ const navItemsUser: NavItem[] = [{ name: "Dashboard", path: "/" }];
 
 const navItemsCoun: NavItem[] = [{ name: "Dashboard", path: "/" },
 { name: "Call Reports", path: "/lead-report" },
-{ name: "Leads", path: "/leads" }];
+{ name: "Leads", path: "/leads" },
+{ name: "Chat", path: "/chat" }
+];
 
 
 const navItemsMan: NavItem[] = [

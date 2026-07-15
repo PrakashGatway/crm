@@ -28,8 +28,6 @@ import FollowUpBot from "./layout/Followup";
 import JoinMeetingPage from "./MeetingJoin";
 import EmailBroadcast from "./pages/EmailMarketing";
 import WhatsappPage from "./pages/Whatsapp/whatsappPage";
-import AutomationList from "./pages/Automation/Pipeline";
-import AutomationEditor from "./pages/Automation/AutomationEditor";
 import MessageAutomationForm from "./pages/Automation/AutomationForm";
 import ChatsPage from "./pages/Whatsapp/RecentChat";
 
